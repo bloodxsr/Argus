@@ -17,6 +17,18 @@ services:
     ports:
       - "8000:8000"
 
+  agrus-gateway:
+    build:
+      context: ./agrus-gateway
+    container_name: agrus-gateway
+    restart: unless-stopped
+    depends_on:
+      - security-ai
+    environment:
+      SECURITY_AI_BASE_URL: http://security-ai:8000
+    ports:
+      - "8080:8080"
+
   test-website:
     build:
       context: ./test-website
@@ -24,11 +36,11 @@ services:
     restart: unless-stopped
     depends_on:
       - mongo
-      - security-ai
+      - agrus-gateway
     environment:
       PORT: 4100
       MONGO_URI: mongodb://mongo:27017/agrus_test_website
-      SECURITY_AI_BASE_URL: http://security-ai:8000
+      SECURITY_AI_BASE_URL: http://agrus-gateway:8080
       CORS_ORIGIN: http://127.0.0.1:4100
     ports:
       - "4100:4100"
@@ -40,11 +52,11 @@ services:
     restart: unless-stopped
     depends_on:
       - mongo
-      - security-ai
+      - agrus-gateway
     environment:
       PORT: 4200
       MONGO_URI: mongodb://mongo:27017/agrus_report_website
-      SECURITY_AI_BASE_URL: http://security-ai:8000
+      SECURITY_AI_BASE_URL: http://agrus-gateway:8080
       CORS_ORIGIN: http://127.0.0.1:4200
     ports:
       - "4200:4200"

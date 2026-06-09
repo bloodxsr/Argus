@@ -54,3 +54,7 @@ Thumbs.db
 # ---------------------------------------------------
 !Project Notes/
 !Project_checkpoints/
+
+# Go and Rust
+agrus-gateway/gateway
+agrus-sensor/target/
