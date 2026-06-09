@@ -1,0 +1,38 @@
+{
+  "scenario_id": "apt_lateral_movement",
+  "title": "APT Lateral Movement Review",
+  "description": "A service account touches multiple hosts over time and triggers scan-like behavior.",
+  "incident": {
+    "incident_id": "inc-scn-apt",
+    "summary": "service account touched multiple hosts over two weeks with suspicious network scan",
+    "risk_score": 76,
+    "asset_id": "svc-build",
+    "host": "build-01",
+    "environment": "production",
+    "hour_of_day": 13,
+    "labels": ["apt", "lateral-movement"],
+    "company": "demo-company"
+  },
+  "expected_outcome": {
+    "classification": "Suspicious but Unconfirmed Activity",
+    "action": "recommend",
+    "auto_execute": false,
+    "requires_human_approval": true,
+    "confidence_at_least": 0.6
+  },
+  "events": [
+    {
+      "schema_version": "1.0",
+      "event_id": "evt-apt-1",
+      "source": "test-website",
+      "event_type": "network_scan",
+      "timestamp": "2026-06-09T13:00:00Z",
+      "host": "build-01",
+      "host_ip": "10.0.4.20",
+      "environment": "production",
+      "pid": 3311,
+      "uid": 1200,
+      "payload": {"account": "svc-build", "target_count": 24, "duration": "two_weeks"}
+    }
+  ]
+}

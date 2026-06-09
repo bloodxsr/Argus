@@ -1,0 +1,38 @@
+{
+  "scenario_id": "benign_backup",
+  "title": "Benign Scheduled Backup",
+  "description": "A low-risk backup job runs during a maintenance window.",
+  "incident": {
+    "incident_id": "inc-scn-backup",
+    "summary": "scheduled backup and maintenance window activity",
+    "risk_score": 12,
+    "asset_id": "backup-01",
+    "host": "backup-01",
+    "environment": "production",
+    "hour_of_day": 2,
+    "labels": ["maintenance"],
+    "company": "demo-company"
+  },
+  "expected_outcome": {
+    "classification": "Benign Operational Activity",
+    "action": "observe",
+    "auto_execute": false,
+    "requires_human_approval": false,
+    "confidence_at_least": 0.8
+  },
+  "events": [
+    {
+      "schema_version": "1.0",
+      "event_id": "evt-backup-1",
+      "source": "test-website",
+      "event_type": "job_started",
+      "timestamp": "2026-06-09T02:00:00Z",
+      "host": "backup-01",
+      "host_ip": "10.0.2.10",
+      "environment": "production",
+      "pid": 902,
+      "uid": 0,
+      "payload": {"job": "nightly-backup", "window": "maintenance"}
+    }
+  ]
+}

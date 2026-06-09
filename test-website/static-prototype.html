@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AISOS Scenario Launcher</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18202a;
+      --muted: #5c6673;
+      --line: #d8dde5;
+      --surface: #f7f8fa;
+      --panel: #ffffff;
+      --accent: #0d7c66;
+      --alert: #b42318;
+      --warn: #9a6700;
+      --info: #1d5fd1;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--surface);
+      font: 14px/1.45 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .topbar {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 22px; font-weight: 700; }
+    h2 { font-size: 16px; margin-bottom: 12px; }
+    h3 { font-size: 14px; margin-bottom: 4px; }
+    .muted { color: var(--muted); }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 330px 1fr;
+      gap: 18px;
+    }
+
+    section, aside {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-width: 0;
+    }
+
+    .panel-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .scenario-list {
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .scenario {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .scenario:hover, .scenario.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(13, 124, 102, 0.12);
+    }
+
+    button.primary {
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 13px;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 38px;
+    }
+
+    button.primary:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 18px;
+    }
+
+    .pipeline {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(90px, 1fr));
+      gap: 10px;
+    }
+
+    .stage {
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--info);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 82px;
+      background: #fff;
+    }
+
+    .stage.done { border-left-color: var(--accent); }
+    .stage.review { border-left-color: var(--warn); }
+    .stage.respond { border-left-color: var(--alert); }
+
+    .result {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 84px;
+      background: #fff;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 20px;
+      margin-top: 6px;
+    }
+
+    pre {
+      margin: 0;
+      padding: 16px;
+      overflow: auto;
+      max-height: 430px;
+      border-top: 1px solid var(--line);
+      background: #101820;
+      color: #e6edf3;
+      font-size: 12px;
+    }
+
+    .status {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #edf7f4;
+      color: #075e50;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 880px) {
+      main { grid-template-columns: 1fr; }
+      .pipeline, .result { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div>
+        <h1>AISOS Scenario Launcher</h1>
+        <p class="muted">Synthetic incident replay for the autonomous security pipeline.</p>
+      </div>
+      <span class="status" id="apiStatus">API pending</span>
+    </div>
+  </header>
+  <main>
+    <aside>
+      <div class="panel-head">
+        <h2>Scenarios</h2>
+        <button class="primary" id="reloadBtn" type="button">Reload</button>
+      </div>
+      <div class="scenario-list" id="scenarioList"></div>
+    </aside>
+
+    <div class="workspace">
+      <section>
+        <div class="panel-head">
+          <div>
+            <h2 id="selectedTitle">Select a scenario</h2>
+            <p class="muted" id="selectedDesc">Run the AISOS API locally, then launch a scenario.</p>
+          </div>
+          <button class="primary" id="runBtn" type="button" disabled>Run</button>
+        </div>
+        <div class="pipeline" id="pipeline"></div>
+      </section>
+
+      <section>
+        <div class="panel-head">
+          <h2>Decision Snapshot</h2>
+          <span class="status" id="decisionState">Waiting</span>
+        </div>
+        <div class="result" id="result"></div>
+      </section>
+
+      <section>
+        <div class="panel-head">
+          <h2>Replay Payload</h2>
+        </div>
+        <pre id="payload">{}</pre>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const API = "http://127.0.0.1:8000";
+    const stages = ["Telemetry", "Investigate", "Risk", "AI Decide", "Respond"];
+    let scenarios = [];
+    let selected = null;
+
+    const scenarioList = document.querySelector("#scenarioList");
+    const selectedTitle = document.querySelector("#selectedTitle");
+    const selectedDesc = document.querySelector("#selectedDesc");
+    const runBtn = document.querySelector("#runBtn");
+    const reloadBtn = document.querySelector("#reloadBtn");
+    const apiStatus = document.querySelector("#apiStatus");
+    const pipeline = document.querySelector("#pipeline");
+    const result = document.querySelector("#result");
+    const payload = document.querySelector("#payload");
+    const decisionState = document.querySelector("#decisionState");
+
+    function renderPipeline(activeIndex = -1, review = false, auto = false) {
+      pipeline.innerHTML = stages.map((stage, index) => {
+        const cls = index <= activeIndex ? "stage done" : "stage";
+        const mode = index === 4 && auto ? " respond" : index === 4 && review ? " review" : "";
+        return `<div class="${cls}${mode}"><h3>${stage}</h3><p class="muted">${index <= activeIndex ? "Complete" : "Queued"}</p></div>`;
+      }).join("");
+    }
+
+    function renderScenarios() {
+      scenarioList.innerHTML = scenarios.map((item) => `
+        <button class="scenario ${selected && selected.scenario_id === item.scenario_id ? "active" : ""}" data-id="${item.scenario_id}" type="button">
+          <h3>${item.title}</h3>
+          <p class="muted">${item.description}</p>
+        </button>
+      `).join("");
+      document.querySelectorAll(".scenario").forEach((button) => {
+        button.addEventListener("click", () => selectScenario(button.dataset.id));
+      });
+    }
+
+    function selectScenario(id) {
+      selected = scenarios.find((item) => item.scenario_id === id);
+      selectedTitle.textContent = selected.title;
+      selectedDesc.textContent = selected.description;
+      runBtn.disabled = false;
+      decisionState.textContent = "Ready";
+      payload.textContent = JSON.stringify(selected, null, 2);
+      renderScenarios();
+      renderPipeline(0);
+      result.innerHTML = "";
+    }
+
+    async function loadScenarios() {
+      apiStatus.textContent = "API loading";
+      try {
+        const response = await fetch(`${API}/scenarios`);
+        const data = await response.json();
+        scenarios = data.scenarios;
+        selected = scenarios[0] || null;
+        apiStatus.textContent = "API connected";
+        if (selected) {
+          selectScenario(selected.scenario_id);
+        }
+      } catch (error) {
+        apiStatus.textContent = "API offline";
+        scenarioList.innerHTML = `<p class="muted">Start the API with: uvicorn security_ai_service.api:app --reload</p>`;
+      }
+    }
+
+    async function runSelected() {
+      if (!selected) return;
+      runBtn.disabled = true;
+      decisionState.textContent = "Running";
+      renderPipeline(2);
+      const response = await fetch(`${API}/scenarios/${selected.scenario_id}/run`, { method: "POST" });
+      const data = await response.json();
+      const decision = data.decision || {};
+      renderPipeline(4, decision.requires_human_approval, decision.auto_execute);
+      decisionState.textContent = decision.auto_execute ? "Auto response" : decision.requires_human_approval ? "Human review" : "Observed";
+      result.innerHTML = `
+        <div class="metric"><span class="muted">Classification</span><strong>${data.ai_result.classification}</strong></div>
+        <div class="metric"><span class="muted">Confidence</span><strong>${Math.round(data.ai_result.confidence * 100)}%</strong></div>
+        <div class="metric"><span class="muted">Action</span><strong>${decision.action}</strong></div>
+      `;
+      payload.textContent = JSON.stringify(data, null, 2);
+      runBtn.disabled = false;
+    }
+
+    reloadBtn.addEventListener("click", loadScenarios);
+    runBtn.addEventListener("click", runSelected);
+    renderPipeline();
+    loadScenarios();
+  </script>
+</body>
+</html>

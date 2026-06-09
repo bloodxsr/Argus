@@ -1,0 +1,30 @@
+{
+  "name": "aisos-report-website",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "nodemon server/index.js",
+    "dev:client": "vite --host 127.0.0.1 --port 5174",
+    "build": "vite build",
+    "contracts": "python ../scripts/generate_ts_contracts.py",
+    "preview": "vite preview --host 127.0.0.1 --port 4174",
+    "start": "node server/index.js"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.0",
+    "express": "^5.1.0",
+    "mongoose": "^8.16.0",
+    "vite": "^7.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "nodemon": "^3.1.0",
+    "typescript": "^5.8.0"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aisos.local/contracts/scenario.schema.json",
+  "title": "Scenario",
+  "type": "object",
+  "required": ["scenario_id", "title", "description", "incident", "expected_outcome", "events"],
+  "properties": {
+    "scenario_id": {"type": "string", "minLength": 1},
+    "title": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "incident": {
+      "type": "object",
+      "required": ["incident_id", "summary", "risk_score"],
+      "properties": {
+        "incident_id": {"type": "string", "minLength": 1},
+        "summary": {"type": "string", "minLength": 1},
+        "risk_score": {"type": "number", "minimum": 0, "maximum": 100},
+        "asset_id": {"type": "string"},
+        "host": {"type": "string"},
+        "environment": {"type": "string"},
+        "hour_of_day": {"type": "integer", "minimum": 0, "maximum": 23},
+        "labels": {"type": "array", "items": {"type": "string"}},
+        "company": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "expected_outcome": {"type": "object"},
+    "events": {"type": "array", "items": {"$ref": "unified_event.schema.json"}}
+  },
+  "additionalProperties": false
+}

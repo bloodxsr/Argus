@@ -1,0 +1,38 @@
+{
+  "scenario_id": "ueba_impossible_travel",
+  "title": "UEBA Ambiguous Impossible Travel",
+  "description": "A privileged user logs in from an unusual location and performs a broad scan.",
+  "incident": {
+    "incident_id": "inc-scn-ueba",
+    "summary": "admin login from unusual country followed by broad network scan",
+    "risk_score": 68,
+    "asset_id": "admin-user-42",
+    "host": "vpn-gateway",
+    "environment": "production",
+    "hour_of_day": 4,
+    "labels": ["ueba", "suspicious"],
+    "company": "demo-company"
+  },
+  "expected_outcome": {
+    "classification": "Suspicious but Unconfirmed Activity",
+    "action": "recommend",
+    "auto_execute": false,
+    "requires_human_approval": true,
+    "confidence_at_least": 0.6
+  },
+  "events": [
+    {
+      "schema_version": "1.0",
+      "event_id": "evt-ueba-1",
+      "source": "test-website",
+      "event_type": "identity_login",
+      "timestamp": "2026-06-09T04:00:00Z",
+      "host": "vpn-gateway",
+      "host_ip": "10.0.0.5",
+      "environment": "production",
+      "pid": null,
+      "uid": 4242,
+      "payload": {"user": "admin-user-42", "country": "unusual", "mfa": "passed"}
+    }
+  ]
+}

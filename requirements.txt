@@ -1,0 +1,12 @@
+transformers>=4.30.0
+accelerate>=0.20.3
+peft>=0.4.0
+datasets>=2.0.0
+bitsandbytes>=0.39.0
+qdrant-client>=1.7.0
+faiss-cpu; platform_system != 'Linux'
+# Optional: Ollama compatible server is separate; no pip package required
+fastapi>=0.95.0
+uvicorn[standard]>=0.22.0
+nats-py>=2.0.0
+sentence-transformers>=2.2.2

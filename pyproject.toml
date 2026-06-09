@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "security-ai-service"
+version = "0.1.0"
+description = "Python Security AI service for AISOS"
+readme = "README.md"
+requires-python = ">=3.13"
+authors = [{ name = "AISOS" }]
+dependencies = []
+
+[tool.setuptools]
+packages = ["security_ai_service"]

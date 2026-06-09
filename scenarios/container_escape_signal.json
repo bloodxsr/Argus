@@ -1,0 +1,38 @@
+{
+  "scenario_id": "container_escape_signal",
+  "title": "Container Runtime Attack Signal",
+  "description": "A container starts a shell from /tmp and begins external beaconing.",
+  "incident": {
+    "incident_id": "inc-scn-container",
+    "summary": "container spawned bash from /tmp and started beaconing to an external IP",
+    "risk_score": 84,
+    "asset_id": "payments-api-pod",
+    "host": "k8s-node-01",
+    "environment": "kubernetes",
+    "hour_of_day": 15,
+    "labels": ["container", "attack"],
+    "company": "demo-company"
+  },
+  "expected_outcome": {
+    "classification": "Remote Code Execution + C2 Beaconing",
+    "action": "kill_process",
+    "auto_execute": true,
+    "requires_human_approval": false,
+    "confidence_at_least": 0.9
+  },
+  "events": [
+    {
+      "schema_version": "1.0",
+      "event_id": "evt-container-1",
+      "source": "test-website",
+      "event_type": "container_process_spawn",
+      "timestamp": "2026-06-09T15:00:00Z",
+      "host": "k8s-node-01",
+      "host_ip": "10.0.3.10",
+      "environment": "kubernetes",
+      "pid": 7721,
+      "uid": 1000,
+      "payload": {"pod": "payments-api", "container": "api", "process": "bash", "path": "/tmp/run.sh"}
+    }
+  ]
+}

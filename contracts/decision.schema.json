@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aisos.local/contracts/decision.schema.json",
+  "title": "Decision",
+  "type": "object",
+  "required": ["incident_id", "action", "confidence", "requires_human_approval", "auto_execute", "reasoning", "fallback_action", "audit_trail"],
+  "properties": {
+    "incident_id": {"type": "string", "minLength": 1},
+    "action": {"type": "string", "minLength": 1},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "requires_human_approval": {"type": "boolean"},
+    "auto_execute": {"type": "boolean"},
+    "reasoning": {"type": "string"},
+    "fallback_action": {"type": "string"},
+    "audit_trail": {"type": "object"}
+  },
+  "additionalProperties": false
+}
