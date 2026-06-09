@@ -47,15 +47,15 @@ def get_unified_dataset() -> list:
     return formatted_corpus
 
 def train_foundation_model():
-    """The master function that handles the entire fine-tuning pipeline using Llama-3.2-3B."""
+    """The master function that handles the entire fine-tuning pipeline using Llama-3.1-8B-Instruct."""
     os.makedirs("models/agrus-v1-final", exist_ok=True)
     
     # 1. Generate Unified Data
     corpus = get_unified_dataset()
     
     # 2. Load Pre-trained Tokenizer
-    print("Loading Pre-Trained Llama-3 Tokenizer...")
-    tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-3B")
+    print("Loading Pre-Trained Llama-3.1-8B Tokenizer...")
+    tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.1-8B-Instruct")
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
         
@@ -69,8 +69,8 @@ def train_foundation_model():
     tokenized_dataset = raw_dataset.map(tokenize_fn, batched=True, remove_columns=["text"])
     collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
-    # 4. Initialize Pre-trained Llama-3.2-3B Model with QLoRA (4-bit)
-    print("Loading Pre-Trained Llama-3.2-3B Brain in 4-bit mode for RTX 4050...")
+    # 4. Initialize Pre-trained Llama-3-8B Model with QLoRA (4-bit)
+    print("Loading Pre-Trained Llama-3.1-8B Brain in 4-bit mode for RTX 4050...")
     
     from transformers import BitsAndBytesConfig
     bnb_config = BitsAndBytesConfig(
@@ -81,7 +81,7 @@ def train_foundation_model():
     )
 
     model = AutoModelForCausalLM.from_pretrained(
-        "meta-llama/Llama-3.2-3B",
+        "meta-llama/Llama-3.1-8B-Instruct",
         quantization_config=bnb_config,
         device_map="auto"
     )
@@ -90,8 +90,8 @@ def train_foundation_model():
     peft_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
         inference_mode=False,
-        r=16, # Increased rank slightly for better learning in 4-bit
-        lora_alpha=32,
+        r=8, # Reduced back to 8 because 8B model eats up way more VRAM
+        lora_alpha=16,
         lora_dropout=0.05,
         target_modules=["q_proj", "k_proj", "v_proj", "o_proj"] # Target all attention layers
     )
@@ -123,7 +123,7 @@ def train_foundation_model():
     trainer.train()
 
     # 6. Save Artifacts
-    print("Saving final AGRUS Llama-3 Fine-Tune...")
+    print("Saving final AGRUS Llama-3.1-8B Fine-Tune...")
     trainer.model.save_pretrained("models/agrus-v1-final")
     tokenizer.save_pretrained("models/agrus-v1-final")
     print("Training complete. Model is ready for deployment!")

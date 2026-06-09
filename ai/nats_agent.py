@@ -50,8 +50,7 @@ async def run_nats(nats_url: str = "nats://127.0.0.1:4222") -> None:
 
 
 def main() -> int:
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(run_nats())
+    asyncio.run(run_nats())
     return 0
 
 

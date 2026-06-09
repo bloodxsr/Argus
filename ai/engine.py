@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from os import getenv
 
-from .backends import HeuristicSecurityBackend, ModelDraft, OllamaChatBackend, SecurityModelBackend
+from .backends import FineTunedLlamaBackend, HeuristicSecurityBackend, ModelDraft, OllamaChatBackend, SecurityModelBackend
 from .knowledge import SecurityKnowledgeBase
 from .retriever import QdrantRetriever
 from .models import AIResult, CompanyConstraints, Decision, IncidentContext
@@ -11,7 +11,13 @@ from .prompts import SecurityPromptBuilder
 
 
 class HeuristicSecurityLLM:
-    """Layered security reasoning service with an Ollama-compatible backend path."""
+    """Layered security reasoning service with an Ollama-compatible backend path.
+    
+    Backend priority:
+    1. FineTunedLlamaBackend — if trained LoRA adapters exist on disk
+    2. OllamaChatBackend — if SECURITY_AI_OLLAMA_BASE_URL env var is set
+    3. HeuristicSecurityBackend — always available, zero dependencies
+    """
 
     def __init__(
         self,
@@ -27,13 +33,27 @@ class HeuristicSecurityLLM:
         self.retriever = retriever or QdrantRetriever()
 
     def _default_backend(self) -> SecurityModelBackend:
+        heuristic = HeuristicSecurityBackend(self.knowledge_base)
+
+        # Priority 1: Fine-tuned Llama 3.1 8B (if adapters exist on disk)
+        import os
+        adapter_path = getenv("AGRUS_MODEL_PATH", "models/agrus-v1-final")
+        if os.path.isdir(adapter_path) and os.path.exists(os.path.join(adapter_path, "adapter_config.json")):
+            return FineTunedLlamaBackend(
+                adapter_path=adapter_path,
+                fallback=heuristic,
+            )
+
+        # Priority 2: Ollama (if configured via env var)
         if getenv("SECURITY_AI_OLLAMA_BASE_URL"):
             return OllamaChatBackend(
-                model=getenv("SECURITY_AI_OLLAMA_MODEL", "mistral"),
+                model=getenv("SECURITY_AI_OLLAMA_MODEL", "llama3.1"),
                 base_url=getenv("SECURITY_AI_OLLAMA_BASE_URL"),
-                fallback=HeuristicSecurityBackend(self.knowledge_base),
+                fallback=heuristic,
             )
-        return HeuristicSecurityBackend(self.knowledge_base)
+
+        # Priority 3: Analytical heuristic engine (always available)
+        return heuristic
 
     def analyze(self, incident: IncidentContext) -> AIResult:
         # Try vector retrieval first; retriever handles fallbacks to in-memory KB

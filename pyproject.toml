@@ -22,6 +22,7 @@ dependencies = [
     "transformers",
     "torch",
     "bitsandbytes",
+    "sentence-transformers",
     "huggingface_hub[cli]"
 ]
 

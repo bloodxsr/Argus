@@ -8,8 +8,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from security_ai_service.evaluation import default_evaluation_cases
-from security_ai_service.knowledge import SecurityKnowledgeBase
+from ai.evaluation import default_evaluation_cases
+from ai.knowledge import SecurityKnowledgeBase
 
 
 OUT = Path("synthetic_security_train.jsonl")

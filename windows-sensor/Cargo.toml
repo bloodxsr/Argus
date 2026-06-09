@@ -16,5 +16,5 @@ tracing-subscriber = "0.3"
 uuid = { version = "1.4", features = ["v4"] }
 
 [target.'cfg(windows)'.dependencies]
-ferrite = "1.0" # Hypothetical ETW wrapper/tracing crate for demonstration
-winapi = { version = "0.3", features = ["winnt", "evntrace"] }
+wmi = "0.13"
+futures = "0.3"

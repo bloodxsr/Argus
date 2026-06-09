@@ -31,38 +31,112 @@ class SecurityModelBackend(Protocol):
 
 
 class HeuristicSecurityBackend:
-    name = "heuristic-dynamic"
+    name = "heuristic-analytical"
+
+    # Behavioral threat signatures — each maps a pattern to a MITRE technique, severity weight, and action
+    THREAT_SIGNATURES: list[dict] = [
+        {"pattern": r"(?:/tmp/|/dev/shm/|/var/tmp/).*(?:bash|sh|python|perl|nc|ncat)", "mitre": "T1059.004", "weight": 0.9, "action": "kill_process", "label": "Shell exec from temp path"},
+        {"pattern": r"(?:reverse.?shell|>?\s*&\s*/dev/tcp|mkfifo|nc\s+-[elp])", "mitre": "T1059.004", "weight": 0.95, "action": "kill_process", "label": "Reverse shell"},
+        {"pattern": r"(?:mimikatz|lsass.*dump|comsvcs\.dll.*MiniDump|sekurlsa)", "mitre": "T1003.001", "weight": 0.97, "action": "isolate_host", "label": "Credential dumping"},
+        {"pattern": r"(?:nmap|masscan|zmap)\s+.*(?:-s[STUFN]|-p)", "mitre": "T1046", "weight": 0.7, "action": "recommend", "label": "Network reconnaissance"},
+        {"pattern": r"(?:wget|curl)\s+.*(?:pastebin|raw\.githubusercontent|transfer\.sh)", "mitre": "T1105", "weight": 0.85, "action": "kill_process", "label": "Payload download from public host"},
+        {"pattern": r"(?:chmod\s+[47][0-7]{2}|chmod\s+\+[sx])\s+/", "mitre": "T1222.002", "weight": 0.6, "action": "recommend", "label": "File permission modification"},
+        {"pattern": r"(?:crontab\s+-[el]|/etc/cron|systemctl\s+enable)", "mitre": "T1053.003", "weight": 0.65, "action": "recommend", "label": "Persistence via scheduled task"},
+        {"pattern": r"(?:base64\s+-d|python.*-c.*exec|eval\(|powershell.*-[Ee]nc)", "mitre": "T1140", "weight": 0.8, "action": "kill_process", "label": "Obfuscated payload execution"},
+        {"pattern": r"(?:\/etc\/shadow|\/etc\/passwd|SAM\s+database|ntds\.dit)", "mitre": "T1003.002", "weight": 0.88, "action": "isolate_host", "label": "Sensitive credential file access"},
+        {"pattern": r"(?:ssh\s+.*@|scp\s+|rsync\s+.*:)", "mitre": "T1021.004", "weight": 0.4, "action": "observe", "label": "SSH lateral movement candidate"},
+        {"pattern": r"(?:iptables\s+-[FXZ]|ufw\s+disable|netsh\s+.*firewall.*off)", "mitre": "T1562.004", "weight": 0.92, "action": "isolate_host", "label": "Firewall tampering"},
+        {"pattern": r"(?:scheduled\s+backup|maintenance\s+window|log\s+rotation|health.?check)", "mitre": "", "weight": 0.0, "action": "observe", "label": "Routine maintenance"},
+    ]
 
     def __init__(self, knowledge_base: SecurityKnowledgeBase | None = None) -> None:
         self.knowledge_base = knowledge_base or SecurityKnowledgeBase()
+        import re
+        self._compiled = [(re.compile(sig["pattern"], re.IGNORECASE), sig) for sig in self.THREAT_SIGNATURES]
 
     def generate(self, prompt: SecurityPromptBundle, incident: IncidentContext) -> ModelDraft:
-        # Rely entirely on the knowledge base vector retrieval instead of hardcoded strings
-        retrieved_titles = [snippet.title.lower() for snippet in prompt.retrieved_context]
-        retrieved_content = " ".join([snippet.content.lower() for snippet in prompt.retrieved_context])
-        
-        is_malicious_context = "malicious" in retrieved_content or "threat" in retrieved_content
-        is_critical_technique = any("t1" in title for title in retrieved_titles)
+        import re
 
-        if is_malicious_context or is_critical_technique:
+        text = f"{incident.summary} {incident.host} {incident.asset_id} {' '.join(incident.labels)}"
+        
+        # Layer 1: Regex-based behavioral signature matching
+        matched_sigs = []
+        for compiled_re, sig in self._compiled:
+            if compiled_re.search(text):
+                matched_sigs.append(sig)
+
+        # Layer 2: Knowledge base contextual retrieval scoring
+        retrieved_titles = [s.title.lower() for s in prompt.retrieved_context]
+        retrieved_content = " ".join(s.content if hasattr(s, 'content') else s.summary for s in prompt.retrieved_context).lower()
+        kb_threat_score = sum(1 for word in ("malicious", "threat", "exploit", "attack", "vulnerability", "compromise") if word in retrieved_content) / 6.0
+
+        # Layer 3: Risk-weighted aggregation
+        if matched_sigs:
+            # Sort by severity weight descending — the most dangerous match drives the classification
+            matched_sigs.sort(key=lambda s: s["weight"], reverse=True)
+            primary = matched_sigs[0]
+            
+            mitre_chain = tuple(dict.fromkeys(s["mitre"] for s in matched_sigs if s["mitre"]))
+            
+            # Confidence is driven by: signature weight + risk score normalization + KB corroboration
+            raw_confidence = primary["weight"]
+            risk_factor = min(incident.risk_score / 100.0, 1.0)
+            kb_boost = kb_threat_score * 0.1
+            confidence = min(round(raw_confidence * 0.7 + risk_factor * 0.2 + kb_boost + 0.05, 2), 0.99)
+            
+            reasoning_layers = ["signature_match", "risk_aggregation"]
+            if kb_threat_score > 0:
+                reasoning_layers.append("kb_corroboration")
+            
+            all_labels = [s["label"] for s in matched_sigs]
+            reasoning = f"Matched {len(matched_sigs)} behavioral signature(s): {'; '.join(all_labels)}. Risk factor: {risk_factor:.2f}, KB threat signal: {kb_threat_score:.2f}."
+            
             return ModelDraft(
-                classification="Identified Threat Activity (KB Match)",
-                confidence=0.85,
-                mitre_techniques=("T1059", "T1071") if is_critical_technique else (),
-                recommended_action="kill_process",
-                escalate_to_human=False,
-                reasoning="Matched threat pattern dynamically from the knowledge base.",
-                reasoning_layers=("vector_retrieval", "policy_check"),
+                classification=primary["label"],
+                confidence=confidence,
+                mitre_techniques=mitre_chain,
+                recommended_action=primary["action"],
+                escalate_to_human=primary["action"] in ("isolate_host", "quarantine_container"),
+                reasoning=reasoning,
+                reasoning_layers=tuple(reasoning_layers),
+            )
+
+        # Layer 4: No signature match — fall back to anomaly scoring
+        anomaly_score = 0.0
+        anomaly_reasons = []
+        
+        if incident.risk_score >= 80:
+            anomaly_score += 0.3
+            anomaly_reasons.append("high_risk_score")
+        if incident.hour_of_day < 6 or incident.hour_of_day > 22:
+            anomaly_score += 0.15
+            anomaly_reasons.append("off_hours_activity")
+        if kb_threat_score > 0.3:
+            anomaly_score += 0.2
+            anomaly_reasons.append("kb_threat_context")
+        if any(label in ("PROCESS_START", "NETWORK_CONNECTION") for label in incident.labels):
+            anomaly_score += 0.1
+            anomaly_reasons.append("kernel_event_type")
+
+        if anomaly_score >= 0.4:
+            return ModelDraft(
+                classification="Anomalous Activity (No Signature Match)",
+                confidence=round(0.5 + anomaly_score * 0.3, 2),
+                mitre_techniques=(),
+                recommended_action="recommend",
+                escalate_to_human=True,
+                reasoning=f"No direct signature match but anomaly score {anomaly_score:.2f} exceeds threshold. Factors: {', '.join(anomaly_reasons)}.",
+                reasoning_layers=("signature_miss", "anomaly_scoring", "escalation"),
             )
 
         return ModelDraft(
-            classification="Unknown or Benign Activity",
-            confidence=0.60,
+            classification="Benign / No Threat Detected",
+            confidence=round(0.65 + kb_threat_score * 0.1, 2),
             mitre_techniques=(),
             recommended_action="observe",
-            escalate_to_human=True,
-            reasoning="No definitive threat pattern found in context; human review advised.",
-            reasoning_layers=("vector_retrieval", "analyst_review"),
+            escalate_to_human=False,
+            reasoning=f"No behavioral signatures matched. Anomaly score {anomaly_score:.2f} is below threshold. KB threat signal: {kb_threat_score:.2f}.",
+            reasoning_layers=("signature_miss", "anomaly_scoring", "benign_classification"),
         )
 
 
@@ -76,7 +150,7 @@ class OllamaChatBackend:
         timeout_seconds: float = 20.0,
         fallback: SecurityModelBackend | None = None,
     ) -> None:
-        self.model = model or os.getenv("SECURITY_AI_OLLAMA_MODEL", "mistral")
+        self.model = model or os.getenv("SECURITY_AI_OLLAMA_MODEL", "llama3.1")
         self.base_url = (base_url or os.getenv("SECURITY_AI_OLLAMA_BASE_URL", "http://localhost:11434")).rstrip("/")
         self.timeout_seconds = timeout_seconds
         self.fallback = fallback or HeuristicSecurityBackend()
@@ -140,3 +214,144 @@ class OllamaChatBackend:
                 return content.strip()
         return ""
 
+
+class FineTunedLlamaBackend:
+    """Backend that loads PEFT/LoRA adapters on top of Llama-3.1-8B-Instruct for real GPU inference."""
+
+    name = "llama-3.1-8b-finetuned"
+
+    def __init__(
+        self,
+        base_model: str = "meta-llama/Llama-3.1-8B-Instruct",
+        adapter_path: str = "models/agrus-v1-final",
+        fallback: SecurityModelBackend | None = None,
+        max_new_tokens: int = 512,
+    ) -> None:
+        self.base_model_name = base_model
+        self.adapter_path = adapter_path
+        self.max_new_tokens = max_new_tokens
+        self.fallback = fallback or HeuristicSecurityBackend()
+        self._model = None
+        self._tokenizer = None
+        self._loaded = False
+
+    def _load_model(self) -> bool:
+        """Lazy-load the model on first inference call to avoid blocking startup."""
+        if self._loaded:
+            return True
+
+        try:
+            import torch
+            from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+            from peft import PeftModel
+        except ImportError:
+            return False
+
+        adapter_check = os.path.isdir(self.adapter_path) and os.path.exists(
+            os.path.join(self.adapter_path, "adapter_config.json")
+        )
+        if not adapter_check:
+            return False
+
+        try:
+            bnb_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_use_double_quant=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=torch.float16,
+            )
+
+            self._tokenizer = AutoTokenizer.from_pretrained(self.adapter_path)
+            if self._tokenizer.pad_token is None:
+                self._tokenizer.pad_token = self._tokenizer.eos_token
+
+            base_model = AutoModelForCausalLM.from_pretrained(
+                self.base_model_name,
+                quantization_config=bnb_config,
+                device_map="auto",
+            )
+            self._model = PeftModel.from_pretrained(base_model, self.adapter_path)
+            self._model.eval()
+            self._loaded = True
+            return True
+        except Exception:
+            self._model = None
+            self._tokenizer = None
+            return False
+
+    def generate(self, prompt: SecurityPromptBundle, incident: IncidentContext) -> ModelDraft:
+        if not self._load_model():
+            return self.fallback.generate(prompt, incident)
+
+        import torch
+
+        # Build the chat template using the same prompt structure the model was fine-tuned on
+        input_text = f"Instruction: Analyze the following security event and provide a SOC assessment:\n{prompt.user_prompt}"
+
+        inputs = self._tokenizer(input_text, return_tensors="pt", truncation=True, max_length=1024)
+        inputs = {k: v.to(self._model.device) for k, v in inputs.items()}
+
+        with torch.no_grad():
+            outputs = self._model.generate(
+                **inputs,
+                max_new_tokens=self.max_new_tokens,
+                do_sample=True,
+                temperature=0.3,
+                top_p=0.9,
+                repetition_penalty=1.1,
+                pad_token_id=self._tokenizer.pad_token_id,
+            )
+
+        generated_ids = outputs[0][inputs["input_ids"].shape[-1]:]
+        raw_output = self._tokenizer.decode(generated_ids, skip_special_tokens=True).strip()
+
+        return self._parse_output(raw_output, incident)
+
+    def _parse_output(self, raw_output: str, incident: IncidentContext) -> ModelDraft:
+        """Attempt to parse model output as JSON, with structured fallback extraction."""
+        # Try direct JSON parse first
+        try:
+            data = json.loads(raw_output)
+            return ModelDraft(
+                classification=str(data.get("classification", "Unknown")),
+                confidence=float(data.get("confidence", 0.5)),
+                mitre_techniques=tuple(str(t) for t in data.get("mitre_techniques", ())),
+                recommended_action=str(data.get("recommended_action", "observe")),
+                escalate_to_human=bool(data.get("escalate_to_human", True)),
+                reasoning=str(data.get("reasoning", raw_output[:200])),
+                reasoning_layers=("llm_inference",),
+            )
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+            pass
+
+        # Try to find JSON embedded within the output
+        import re
+        json_match = re.search(r'\{[^{}]*\}', raw_output, re.DOTALL)
+        if json_match:
+            try:
+                data = json.loads(json_match.group())
+                return ModelDraft(
+                    classification=str(data.get("classification", "Unknown")),
+                    confidence=float(data.get("confidence", 0.5)),
+                    mitre_techniques=tuple(str(t) for t in data.get("mitre_techniques", ())),
+                    recommended_action=str(data.get("recommended_action", "observe")),
+                    escalate_to_human=bool(data.get("escalate_to_human", True)),
+                    reasoning=str(data.get("reasoning", raw_output[:200])),
+                    reasoning_layers=("llm_inference", "json_extraction"),
+                )
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+                pass
+
+        # Fallback: use the raw text as reasoning and classify based on keywords in the output
+        output_lower = raw_output.lower()
+        is_threat = any(w in output_lower for w in ("malicious", "threat", "attack", "exploit", "critical", "kill"))
+        
+        return ModelDraft(
+            classification="LLM Threat Assessment" if is_threat else "LLM Benign Assessment",
+            confidence=0.72 if is_threat else 0.6,
+            mitre_techniques=(),
+            recommended_action="recommend" if is_threat else "observe",
+            escalate_to_human=is_threat,
+            reasoning=raw_output[:500],
+            reasoning_layers=("llm_inference", "freetext_fallback"),
+        )

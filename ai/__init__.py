@@ -1,4 +1,4 @@
-from .backends import HeuristicSecurityBackend, OllamaChatBackend
+from .backends import FineTunedLlamaBackend, HeuristicSecurityBackend, OllamaChatBackend
 from .engine import HeuristicSecurityLLM, SecurityDecisionEngine
 from .evaluation import EvaluationHarness, default_evaluation_cases
 from .knowledge import KnowledgeSnippet, SecurityKnowledgeBase
@@ -11,6 +11,7 @@ __all__ = [
     "Decision",
     "EvaluationCase",
     "EvaluationHarness",
+    "FineTunedLlamaBackend",
     "HeuristicSecurityLLM",
     "IncidentContext",
     "KnowledgeSnippet",

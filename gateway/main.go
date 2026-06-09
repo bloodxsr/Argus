@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/subtle"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -12,7 +14,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nats-io/nats.go"
-	"crypto/subtle"
 )
 
 // TelemetryEvent matches the schema sent by the Rust eBPF sensor
@@ -105,17 +106,35 @@ func main() {
 		})
 	}
 
-	// Sensor Telemetry Ingestion (High Throughput via Goroutines)
+	// Sensor Telemetry Ingestion (High Throughput via Goroutines and Batching)
 	r.With(authMiddleware).Post("/api/v1/telemetry", func(w http.ResponseWriter, r *http.Request) {
-		var event TelemetryEvent
-		if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		var events []TelemetryEvent
+		
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "Failed to read body", http.StatusBadRequest)
 			return
 		}
-		log.Printf("Received Kernel Event: [%s] from host %s", event.EventType, event.Host)
-		
-		// Fanout to AI Engine in background
-		go routeToAIEngine(event, nc)
+
+		if len(body) > 0 && body[0] == '[' {
+			if err := json.Unmarshal(body, &events); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		} else {
+			var single TelemetryEvent
+			if err := json.Unmarshal(body, &single); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			events = append(events, single)
+		}
+
+		for _, event := range events {
+			log.Printf("Received Kernel Event: [%s] from host %s", event.EventType, event.Host)
+			// Fanout to AI Engine in background
+			go routeToAIEngine(event, nc)
+		}
 
 		w.WriteHeader(http.StatusAccepted)
 		w.Write([]byte(`{"status": "queued"}`))
