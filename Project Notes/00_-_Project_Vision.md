@@ -18,9 +18,21 @@ AISOS is an autonomous cybersecurity platform capable of monitoring, investigati
 
 ---
 
+## Target Market (B2B Enterprise)
+
+This platform is **not** an endpoint security tool for everyday consumer laptops. 
+AISOS is strictly a **B2B (Business-to-Business) Enterprise Platform** built for:
+- **Cloud Infrastructure Providers**
+- **Managed Hosting Companies** (maintaining thousands of websites)
+- **DevOps & SRE Teams** managing large-scale server networks and Kubernetes clusters.
+
+It is designed to protect web servers, databases, load balancers, and cloud environments from web exploits, container escapes, and server-side lateral movement.
+
+---
+
 ## Core Goal
 
-Transform cybersecurity from:
+Transform enterprise cybersecurity from:
 
 ```
 Alert → Human → Decision → Action

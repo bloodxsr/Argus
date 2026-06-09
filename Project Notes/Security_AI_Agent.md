@@ -73,39 +73,24 @@ The current Python implementation mirrors Ollama's local-serving style:
 
 ---
 
-## Implementation Plan
+## Implementation Plan (Custom Foundation Model)
 
-### Step 1 — Base Model
+We have pivoted away from fine-tuning generic models (like Mistral-7B). The system now runs on a completely custom, proprietary **~3 Billion Parameter Foundation Model** built from scratch in PyTorch.
 
-Start with `mistral-7b-instruct` or `phi-3-mini` (smaller, faster, enough for structured classification).
+### Step 1 — Custom Tokenizer
+Standard tokenizers destroy IP addresses and hex codes. We train a Custom Byte-Level BPE Tokenizer (`train/train_custom_tokenizer.py`) strictly on server logs, eBPF traces, and JSON. 
 
-### Step 2 — Dataset Construction
+### Step 2 — Custom 3B Architecture
+We implemented a highly scalable Decoder-Only Transformer (`train/custom_transformer.py`) featuring:
+- **Flash Attention 2**: O(N) memory scaling to handle 8192-token context windows (massive server logs).
+- **Grouped Query Attention (GQA)**: For sub-500ms inference times.
+- **Rotary Position Embeddings (RoPE)**: For seamless length extrapolation.
 
-```python
-# Format: instruction-response pairs
-{
-  "instruction": "Process /tmp/x.sh spawned by nginx. Connected to 185.x.x.x. Parent PID is www-data.",
-  "response": {
-    "classification": "Webshell execution",
-    "mitre_technique": "T1059.004",
-    "confidence": 0.91,
-    "recommended_action": "kill_process + block_ip + isolate_container",
-    "reasoning": "Nginx spawning shell scripts is abnormal. External IP contact post-execution indicates C2 beaconing."
-  }
-}
-```
+### Step 3 — Pre-Training
+The model is pre-trained from scratch on terabytes of raw unstructured cybersecurity data (Nginx logs, PCAPs, Windows Events, DFIR reports). It does not learn generic English; it only learns the physics of cyber attacks.
 
-Construct 10,000+ such pairs from MITRE ATT&CK examples, public DFIR reports, and synthetic generation.
-
-### Step 3 — Fine-tuning
-
-```bash
-# Using LLaMA-Factory or Axolotl
-axolotl train security_finetune.yaml
-
-# LoRA fine-tune — keeps compute cost low
-# Target: 4-bit quantized, runs on single A10G
-```
+### Step 4 — Alignment (SFT)
+Once the foundation is solid, the model is Supervised Fine-Tuned (SFT) using the `IncidentReport` history from our MongoDB database to output the exact JSON schemas expected by the `SecurityDecisionEngine`.
 
 ### Step 4 — RAG Layer
 
