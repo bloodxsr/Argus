@@ -9,3 +9,8 @@ models/
 data/
 train/data/
 *.gguf
+
+# Exclude Rust workspaces from Docker context
+sensor/
+ebpf/
+windows-sensor/

@@ -37,8 +37,7 @@ node_modules/
 npm-debug.log
 yarn-error.log
 yarn-debug.log
-/test-website/dist/
-/report-website/dist/
+/dashboard/dist/
 dist-ssr/
 *.local
 
@@ -56,9 +55,13 @@ Thumbs.db
 !Project_checkpoints/
 
 # Go and Rust
-agrus-gateway/gateway
-agrus-sensor/target/
+gateway/gateway
+sensor/target/
+ebpf/target/
+windows-sensor/target/
 
 # AI Models and Datasets
 models/
 data/
+train/data/
+ai.egg-info/

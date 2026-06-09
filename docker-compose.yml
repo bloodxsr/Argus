@@ -1,4 +1,11 @@
 services:
+  nats:
+    image: nats:latest
+    container_name: agrus-nats
+    restart: unless-stopped
+    ports:
+      - "4222:4222"
+
   mongo:
     image: mongo:7
     container_name: agrus-mongo
@@ -17,38 +24,37 @@ services:
     ports:
       - "8000:8000"
 
+  security-ai-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.security-ai
+    container_name: agrus-security-ai-agent
+    restart: unless-stopped
+    depends_on:
+      - nats
+      - security-ai
+    command: ["python", "-m", "ai.nats_agent"]
+
   agrus-gateway:
     build:
-      context: ./agrus-gateway
+      context: ./gateway
     container_name: agrus-gateway
     restart: unless-stopped
     depends_on:
+      - nats
       - security-ai
     environment:
       SECURITY_AI_BASE_URL: http://security-ai:8000
+      NATS_URL: nats://nats:4222
     ports:
       - "8080:8080"
 
-  test-website:
-    build:
-      context: ./test-website
-    container_name: agrus-test-website
-    restart: unless-stopped
-    depends_on:
-      - mongo
-      - agrus-gateway
-    environment:
-      PORT: 4100
-      MONGO_URI: mongodb://mongo:27017/agrus_test_website
-      SECURITY_AI_BASE_URL: http://agrus-gateway:8080
-      CORS_ORIGIN: http://127.0.0.1:4100
-    ports:
-      - "4100:4100"
 
-  report-website:
+
+  dashboard:
     build:
-      context: ./report-website
-    container_name: agrus-report-website
+      context: ./dashboard
+    container_name: agrus-dashboard
     restart: unless-stopped
     depends_on:
       - mongo
@@ -58,6 +64,7 @@ services:
       MONGO_URI: mongodb://mongo:27017/agrus_report_website
       SECURITY_AI_BASE_URL: http://agrus-gateway:8080
       CORS_ORIGIN: http://127.0.0.1:4200
+      NATS_URL: nats://nats:4222
     ports:
       - "4200:4200"
 

@@ -9,7 +9,21 @@ description = "Python Security AI service for AISOS"
 readme = "README.md"
 requires-python = ">=3.13"
 authors = [{ name = "AISOS" }]
-dependencies = []
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "nats-py",
+    "qdrant-client",
+    "ollama",
+    "peft",
+    "accelerate",
+    "datasets",
+    "transformers",
+    "torch",
+    "bitsandbytes",
+    "huggingface_hub[cli]"
+]
 
 [tool.setuptools]
-packages = ["security_ai_service"]
+packages = ["ai"]
