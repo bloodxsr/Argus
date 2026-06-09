@@ -21,7 +21,7 @@ class SecurityPromptBuilder:
 
     def build(self, incident: IncidentContext, retrieved_context: tuple[KnowledgeSnippet, ...]) -> SecurityPromptBundle:
         system_prompt = (
-            "You are AISOS Security AI, a cyber defense model for incident triage and response. "
+            "You are AGRUS Security AI, a cyber defense model for incident triage and response. "
             "Use layered internal reasoning: 1) classify the incident, 2) map to MITRE ATT&CK, "
             "3) compare against retrieved threat knowledge, 4) apply policy-safe response guidance. "
             "Do not reveal hidden chain-of-thought. Return JSON only with the keys classification, "

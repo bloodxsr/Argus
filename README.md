@@ -1,6 +1,6 @@
-# AISOS Security AI Service
+# AGRUS Security AI Service
 
-This repository starts the Python Security AI layer for AISOS.
+This repository starts the Python Security AI layer for AGRUS.
 
 ## What it contains
 

@@ -3,7 +3,7 @@
 ## Date: 2026-06-09
 
 ### 1. B2B Enterprise Target Market Pivot
-- **Context:** Clarified the fundamental target audience and deployment environment. AISOS is not an endpoint security product for average users; it is a B2B platform tailored for Enterprise Web Hosting, Cloud Infrastructure Providers, and DevOps teams.
+- **Context:** Clarified the fundamental target audience and deployment environment. AGRUS is not an endpoint security product for average users; it is a B2B platform tailored for Enterprise Web Hosting, Cloud Infrastructure Providers, and DevOps teams.
 - **Action:** Updated `00_-_Project_Vision.md` to formally document this. All future architectural and product decisions (e.g., UI terminology, AI constraints, incident types) will focus on protecting servers, databases, load balancers, and Kubernetes ingress nodes from threats like web-exploits, container escapes, and lateral movement.
 
 ### 2. Custom 3-Billion Parameter Foundation Model (PyTorch)

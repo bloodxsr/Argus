@@ -94,7 +94,7 @@ Dashboard shows everything live as it happens.
 
 ### The Pitch (60 seconds)
 
-> "SOC analysts deal with 10,000 alerts a day. They miss real threats. AISOS reduces that to 12 decisions per day — only the ones that actually need human judgment. Everything else is handled autonomously with a domain-specialized security AI. Not GPT-4. Not rules. A model trained to think like a senior security analyst."
+> "SOC analysts deal with 10,000 alerts a day. They miss real threats. AGRUS reduces that to 12 decisions per day — only the ones that actually need human judgment. Everything else is handled autonomously with a domain-specialized security AI. Not GPT-4. Not rules. A model trained to think like a senior security analyst."
 
 ### The Demo (90 seconds)
 
@@ -110,7 +110,7 @@ Run the scripted attack scenario live. Point to the dashboard:
 ### Likely Judge Questions
 
 **"How is this different from CrowdStrike?"**
-> CrowdStrike detects and pages a human. AISOS detects, investigates, decides, and acts. The human audits, not approves. Different operational model entirely.
+> CrowdStrike detects and pages a human. AGRUS detects, investigates, decides, and acts. The human audits, not approves. Different operational model entirely.
 
 **"Isn't full automation dangerous?"**
 > That's why we have three tiers. High risk acts autonomously with a post-action audit trail. Medium risk requires human approval. Low risk is silent. Compliance requirements are met. Legal accountability is preserved.

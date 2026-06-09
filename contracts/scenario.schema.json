@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://aisos.local/contracts/scenario.schema.json",
+  "$id": "https://agrus.local/contracts/scenario.schema.json",
   "title": "Scenario",
   "type": "object",
   "required": ["scenario_id", "title", "description", "incident", "expected_outcome", "events"],

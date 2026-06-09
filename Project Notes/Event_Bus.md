@@ -1,6 +1,6 @@
 # Event Bus
 
-Communication backbone of AISOS. All agents communicate exclusively through this layer. No agent calls another agent directly.
+Communication backbone of AGRUS. All agents communicate exclusively through this layer. No agent calls another agent directly.
 
 ## Related Notes
 - [[Monitoring Agent]]

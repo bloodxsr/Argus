@@ -1,6 +1,6 @@
 # Security AI Agent
 
-The core reasoning brain of AISOS. A domain-specialized AI that thinks like a senior security analyst — not a general-purpose chatbot.
+The core reasoning brain of AGRUS. A domain-specialized AI that thinks like a senior security analyst — not a general-purpose chatbot.
 
 ## Related Notes
 - [[Decision Engine]]
@@ -20,7 +20,7 @@ This is the key architectural difference from competitors who use GPT-4 or Claud
 - Every MITRE ATT&CK tactic, technique, and sub-technique
 - 200,000+ CVE entries with CVSS scores and exploit context
 - Real-world incident reports (DFIR reports, threat actor TTPs)
-- Historical AISOS incidents and analyst decisions
+- Historical AGRUS incidents and analyst decisions
 - Live threat intelligence feeds (abuse.ch, OTX, VirusTotal)
 
 ---
@@ -69,13 +69,15 @@ The current Python implementation mirrors Ollama's local-serving style:
 | CISA KEV catalog | Actively exploited vulnerabilities |
 | abuse.ch datasets | Live malware IOCs |
 | Mandiant / CrowdStrike threat reports (public) | Real APT TTPs |
-| AISOS incident history | Platform-specific learned context |
+| AGRUS incident history | Platform-specific learned context |
 
 ---
 
 ## Implementation Plan (Custom Foundation Model)
 
 We have pivoted away from fine-tuning generic models (like Mistral-7B). The system now runs on a completely custom, proprietary **~3 Billion Parameter Foundation Model** built from scratch in PyTorch.
+
+> **Full Blueprint Available Here:** [[Custom_3B_Model_Training_Guide]]
 
 ### Step 1 — Custom Tokenizer
 Standard tokenizers destroy IP addresses and hex codes. We train a Custom Byte-Level BPE Tokenizer (`train/train_custom_tokenizer.py`) strictly on server logs, eBPF traces, and JSON. 
@@ -105,7 +107,7 @@ Once the foundation is solid, the model is Supervised Fine-Tuned (SFT) using the
 
 ```bash
 # Self-hosted via vLLM
-vllm serve aisos-security-7b --quantization awq --max-model-len 4096
+vllm serve agrus-security-7b --quantization awq --max-model-len 4096
 
 # Or for MVP: call Mistral API with system prompt built from security KB
 ```
@@ -165,7 +167,7 @@ For MVP: call Mistral API with a structured security system prompt. Cheap, fast 
 
 For production: self-hosted vLLM on a single A10G GPU handles ~200 concurrent requests. Multiple GPU nodes behind a load balancer handles enterprise scale.
 
-Fine-tune cadence: retrain monthly on new AISOS incident data + analyst corrections. This is the feedback loop that makes the model smarter over time on your specific infrastructure.
+Fine-tune cadence: retrain monthly on new AGRUS incident data + analyst corrections. This is the feedback loop that makes the model smarter over time on your specific infrastructure.
 
 ---
 

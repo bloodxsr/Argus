@@ -5,130 +5,210 @@ import "./styles.css";
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:4200";
 
 function App() {
-  const [scenarios, setScenarios] = useState([]);
-  const [selectedId, setSelectedId] = useState("");
-  const [report, setReport] = useState(null);
   const [reports, setReports] = useState([]);
-  const [status, setStatus] = useState("Loading");
-  const [mongoConnected, setMongoConnected] = useState(false);
+  const [scenarios, setScenarios] = useState([]);
+  const [selectedScenarioId, setSelectedScenarioId] = useState("");
+  const [tab, setTab] = useState("active"); // 'active' or 'solved'
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [loadingModal, setLoadingModal] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  async function loadHealth() {
-    const response = await fetch(`${apiBaseUrl}/api/health`);
-    const data = await response.json();
-    setMongoConnected(Boolean(data.mongoConnected));
+  useEffect(() => {
+    fetchReports();
+    fetchScenarios();
+  }, []);
+
+  async function fetchReports() {
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/reports`);
+      const data = await res.json();
+      setReports(data.reports || []);
+    } catch (e) {
+      console.error("Failed to load reports", e);
+    }
   }
 
-  async function loadScenarios() {
-    const response = await fetch(`${apiBaseUrl}/api/scenarios`);
-    const data = await response.json();
-    setScenarios(data.scenarios || []);
-    setSelectedId(data.scenarios?.[0]?.scenario_id || "");
-  }
-
-  async function loadReports() {
-    const response = await fetch(`${apiBaseUrl}/api/reports`);
-    const data = await response.json();
-    setReports(data.reports || []);
+  async function fetchScenarios() {
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/scenarios`);
+      const data = await res.json();
+      setScenarios(data.scenarios || []);
+      if (data.scenarios?.length > 0) {
+        setSelectedScenarioId(data.scenarios[0].scenario_id);
+      }
+    } catch (e) {
+      console.error("Failed to load scenarios", e);
+    }
   }
 
   async function generateReport() {
-    if (!selectedId) return;
-    setStatus("Generating");
-    const response = await fetch(`${apiBaseUrl}/api/reports/from-scenario/${selectedId}`, { method: "POST" });
-    const data = await response.json();
-    setReport(data.payload);
-    setStatus(data.payload.decision.auto_execute ? "Auto response" : data.payload.decision.requires_human_approval ? "Review required" : "Observed");
-    loadReports();
+    if (!selectedScenarioId) return;
+    setIsGenerating(true);
+    try {
+      await fetch(`${apiBaseUrl}/api/reports/from-scenario/${selectedScenarioId}`, { method: "POST" });
+      await fetchReports();
+    } catch (e) {
+      console.error(e);
+    }
+    setIsGenerating(false);
   }
 
-  useEffect(() => {
-    Promise.all([loadHealth(), loadScenarios(), loadReports()])
-      .then(() => setStatus("Ready"))
-      .catch((error) => setStatus(error.message));
-  }, []);
+  async function viewReportDetails(id) {
+    setLoadingModal(true);
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/reports/${id}`);
+      const data = await res.json();
+      setSelectedReport(data.report);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoadingModal(false);
+  }
+
+  const activeProblems = reports.filter((r) => r.requiresHumanApproval || !r.autoExecute);
+  const solvedProblems = reports.filter((r) => r.autoExecute && !r.requiresHumanApproval);
+
+  const displayedReports = tab === "active" ? activeProblems : solvedProblems;
 
   return (
-    <>
+    <div className="container">
       <header>
         <div>
-          <h1>AISOS Incident Reports</h1>
-          <p>Audit view for decisions, response actions, and human review state.</p>
+          <h1>AGRUS Security Dashboard</h1>
+          <p>Real-time incident reports, autonomous actions, and SOC escalations.</p>
         </div>
-        <span>{status} · {mongoConnected ? "Mongo on" : "Mongo reports off"}</span>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <select 
+            style={{ padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontFamily: 'var(--font-main)' }}
+            value={selectedScenarioId} 
+            onChange={(e) => setSelectedScenarioId(e.target.value)}
+          >
+            {scenarios.map(s => <option key={s.scenario_id} value={s.scenario_id} style={{color: 'black'}}>{s.title}</option>)}
+          </select>
+          <button className="generate-btn" onClick={generateReport} disabled={isGenerating}>
+            {isGenerating ? "Simulating..." : "Trigger Incident"}
+          </button>
+        </div>
       </header>
 
-      <main>
-        <section className="toolbar">
-          <div>
-            <h2>Generate Report</h2>
-            <p>Reports are created from the same replay endpoint used by the test website.</p>
-          </div>
-          <div className="controls">
-            <select value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
-              {scenarios.map((scenario) => (
-                <option key={scenario.scenario_id} value={scenario.scenario_id}>{scenario.title}</option>
-              ))}
-            </select>
-            <button onClick={generateReport}>Generate</button>
-          </div>
-        </section>
+      <div className="tabs">
+        <button 
+          className={`tab ${tab === 'active' ? 'active' : ''}`} 
+          data-type="active"
+          onClick={() => setTab('active')}
+        >
+          Active Problems ({activeProblems.length})
+        </button>
+        <button 
+          className={`tab ${tab === 'solved' ? 'active' : ''}`} 
+          data-type="solved"
+          onClick={() => setTab('solved')}
+        >
+          Solved Problems ({solvedProblems.length})
+        </button>
+      </div>
 
-        <section className="metrics">
-          <Metric label="Incident" value={report?.decision?.incident_id || "-"} />
-          <Metric label="Classification" value={report?.ai_result?.classification || "-"} />
-          <Metric label="Action" value={report?.decision?.action || "-"} />
-          <Metric label="Confidence" value={report ? `${Math.round(report.decision.confidence * 100)}%` : "-"} />
-        </section>
+      <div className="report-grid">
+        {displayedReports.length === 0 && (
+          <p style={{color: 'var(--text-secondary)'}}>No {tab} problems at the moment.</p>
+        )}
+        {displayedReports.map((report) => (
+          <div 
+            key={report._id} 
+            className={`glass-card ${tab === 'active' ? 'active-card' : 'solved-card'}`}
+            onClick={() => viewReportDetails(report._id)}
+          >
+            <div className="card-header">
+              <h3>{report.incidentId}</h3>
+              <span className={`badge ${tab === 'active' ? 'active-badge' : 'solved-badge'}`}>
+                {tab === 'active' ? 'Requires Review' : 'Auto-Resolved'}
+              </span>
+            </div>
+            <div className="card-body">
+              <p><strong>Threat:</strong> {report.classification}</p>
+              <p><strong>Proposed Action:</strong> {report.action}</p>
+            </div>
+            <div className="card-footer">
+              <span>Confidence: {Math.round(report.confidence * 100)}%</span>
+              <span>{new Date(report.createdAt).toLocaleTimeString()}</span>
+            </div>
+          </div>
+        ))}
+      </div>
 
-        <section>
-          <div className="panelHead">
-            <h2>Timeline</h2>
-          </div>
-          <div className="timeline">
-            <TimelineRow label="Telemetry" value={report ? `${report.event_count} event(s) from ${report.scenario.incident.host}` : "Waiting"} />
-            <TimelineRow label="AI Result" value={report?.ai_result?.classification || "Waiting"} />
-            <TimelineRow label="Decision" value={report?.decision?.reasoning || "Waiting"} />
-            <TimelineRow label="Action" value={report ? `${report.action_record.action_type}: ${report.action_record.result}` : "Waiting"} />
-            <TimelineRow label="Human Audit" value={report?.review_decision?.notes || "Audit available after autonomous action."} />
-          </div>
-        </section>
-
-        <section>
-          <div className="panelHead">
-            <h2>Recent Reports</h2>
-          </div>
-          <div className="reportList">
-            {!mongoConnected && <p>MongoDB is offline, so generated reports are not being stored.</p>}
-            {reports.map((item) => (
-              <div className="reportRow" key={item._id}>
-                <strong>{item.incidentId}</strong>
-                <span>{item.classification}</span>
-                <span>{item.action}</span>
+      {selectedReport && (
+        <div className="modal-overlay" onClick={() => setSelectedReport(null)}>
+          <div className="report-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h2>Incident: {selectedReport.incidentId}</h2>
+                <span className={`badge ${selectedReport.autoExecute ? 'solved-badge' : 'active-badge'}`}>
+                  {selectedReport.autoExecute ? 'Resolved Autonomously' : 'Human Escalation Required'}
+                </span>
               </div>
-            ))}
+              <button className="close-btn" onClick={() => setSelectedReport(null)}>✕</button>
+            </div>
+
+            <div className="modal-body">
+              {/* If Solved, show the Solution prominently */}
+              {selectedReport.autoExecute && (
+                <div className="report-section solution-box">
+                  <h4>✓ Solution Applied</h4>
+                  <div className="data-grid">
+                    <div className="data-item">
+                      <span className="data-label">Action Taken</span>
+                      <span className="data-val">{selectedReport.payload?.action_record?.action_type || selectedReport.action}</span>
+                    </div>
+                    <div className="data-item">
+                      <span className="data-label">Result</span>
+                      <span className="data-val">{selectedReport.payload?.action_record?.result || "Threat Neutralized successfully. No downtime."}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* If Active, show Warning prominently */}
+              {!selectedReport.autoExecute && (
+                <div className="report-section warning-box">
+                  <h4>⚠ Human Review Required</h4>
+                  <p style={{color: 'var(--text-secondary)', lineHeight: '1.5'}}>
+                    The AI Engine detected a threat but was constrained by Blast Radius Logic. 
+                    It is awaiting a human SOC analyst to approve the execution of: <strong>{selectedReport.action}</strong>
+                  </p>
+                </div>
+              )}
+
+              <div className="report-section">
+                <h4>AI Analysis</h4>
+                <div className="data-grid">
+                  <div className="data-item">
+                    <span className="data-label">Classification</span>
+                    <span className="data-val">{selectedReport.classification}</span>
+                  </div>
+                  <div className="data-item">
+                    <span className="data-label">AI Confidence</span>
+                    <span className="data-val">{Math.round(selectedReport.confidence * 100)}%</span>
+                  </div>
+                  <div className="data-item" style={{ gridColumn: 'span 2' }}>
+                    <span className="data-label">Reasoning Engine</span>
+                    <span className="data-val" style={{fontSize: '1rem', color: 'var(--text-secondary)', marginTop: '8px', lineHeight: '1.5'}}>
+                      {selectedReport.payload?.decision?.reasoning || "Analyzing network telemetry against MITRE ATT&CK models..."}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="report-section">
+                <h4>Raw Telemetry Payload</h4>
+                <pre className="json-view">
+                  {JSON.stringify(selectedReport.payload?.scenario?.incident || {}, null, 2)}
+                </pre>
+              </div>
+
+            </div>
           </div>
-        </section>
-
-        <pre>{JSON.stringify(report || {}, null, 2)}</pre>
-      </main>
-    </>
-  );
-}
-
-function Metric({ label, value }) {
-  return (
-    <div className="metric">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function TimelineRow({ label, value }) {
-  return (
-    <div className="timelineRow">
-      <strong>{label}</strong>
-      <span>{value}</span>
+        </div>
+      )}
     </div>
   );
 }

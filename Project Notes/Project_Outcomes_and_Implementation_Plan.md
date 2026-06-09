@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This note converts the current AISOS notes into concrete project directions and a build plan for the three-repo structure:
+This note converts the current AGRUS notes into concrete project directions and a build plan for the three-repo structure:
 
 - Test Website
 - Core Agent / Security AI Service
@@ -25,7 +25,7 @@ This note converts the current AISOS notes into concrete project directions and 
 
 ## What We Are Making
 
-AISOS is an AI-native cybersecurity risk management and response platform.
+AGRUS is an AI-native cybersecurity risk management and response platform.
 
 The core promise is:
 
@@ -73,7 +73,7 @@ Core features:
 
 ### Outcome 2 - AI-Native SOAR
 
-Position AISOS as a replacement for static SOAR playbooks.
+Position AGRUS as a replacement for static SOAR playbooks.
 
 Best for:
 - enterprise security operations
@@ -129,7 +129,7 @@ Core features:
 - report blast radius
 
 Main differentiator:
-- tools like Falco detect; AISOS can reason and act within policy.
+- tools like Falco detect; AGRUS can reason and act within policy.
 
 ### Outcome 5 - UEBA and Behavioral Risk Engine
 

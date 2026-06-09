@@ -12,7 +12,7 @@ from .models import CompanyConstraints, IncidentContext
 from .replay import replay_scenario
 from .scenarios import load_scenarios
 
-app = FastAPI(title="AISOS Security AI Service")
+app = FastAPI(title="AGRUS Security AI Service")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

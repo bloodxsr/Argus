@@ -16,8 +16,8 @@
   "expected_outcome": {
     "classification": "Remote Code Execution + C2 Beaconing",
     "action": "kill_process",
-    "auto_execute": true,
-    "requires_human_approval": false,
+    "auto_execute": false,
+    "requires_human_approval": true,
     "confidence_at_least": 0.9
   },
   "events": [

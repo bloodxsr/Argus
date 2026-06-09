@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented the first concrete foundation for splitting AISOS into the Test Website, Core Agent, and Report / Result Website.
+Implemented the first concrete foundation for splitting AGRUS into the Test Website, Core Agent, and Report / Result Website.
 
 ## What Changed
 

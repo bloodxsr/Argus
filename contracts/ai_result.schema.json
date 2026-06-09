@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://aisos.local/contracts/ai_result.schema.json",
+  "$id": "https://agrus.local/contracts/ai_result.schema.json",
   "title": "AIResult",
   "type": "object",
   "required": ["incident_id", "classification", "confidence", "mitre_techniques", "recommended_action", "escalate_to_human", "reasoning"],

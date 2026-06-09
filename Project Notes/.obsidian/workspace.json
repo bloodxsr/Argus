@@ -90,7 +90,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "AISOS_Implementation_Blueprint.md",
+                "file": "AGRUS_Implementation_Blueprint.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -100,7 +100,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for AISOS_Implementation_Blueprint"
+              "title": "Backlinks for AGRUS_Implementation_Blueprint"
             }
           },
           {
@@ -109,12 +109,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "AISOS_Implementation_Blueprint.md",
+                "file": "AGRUS_Implementation_Blueprint.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from AISOS_Implementation_Blueprint"
+              "title": "Outgoing links from AGRUS_Implementation_Blueprint"
             }
           },
           {
@@ -152,13 +152,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "AISOS_Implementation_Blueprint.md",
+                "file": "AGRUS_Implementation_Blueprint.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of AISOS_Implementation_Blueprint"
+              "title": "Outline of AGRUS_Implementation_Blueprint"
             }
           }
         ]
@@ -181,7 +181,7 @@
   },
   "active": "243ebe36af4880ff",
   "lastOpenFiles": [
-    "AISOS_Implementation_Blueprint.md",
+    "AGRUS_Implementation_Blueprint.md",
     "01 - System Architecture.md",
     "00 - Project Vision.md",
     "Investigation Agent.md",

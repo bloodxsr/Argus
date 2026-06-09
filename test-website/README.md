@@ -1,6 +1,6 @@
-# AISOS Test Website
+# AGRUS Test Website
 
-MERN stack scenario launcher for AISOS.
+MERN stack scenario launcher for AGRUS.
 
 `index.html` is the Vite React entry point. `static-prototype.html` preserves the earlier standalone prototype.
 

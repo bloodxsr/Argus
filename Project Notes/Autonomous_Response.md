@@ -1,6 +1,6 @@
 # Autonomous Response
 
-Defines the response tiers in AISOS. Autonomous does not mean humans are removed — it means humans are removed from every alert that doesn't need them.
+Defines the response tiers in AGRUS. Autonomous does not mean humans are removed — it means humans are removed from every alert that doesn't need them.
 
 ## Related Notes
 - [[Response Agent]]

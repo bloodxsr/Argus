@@ -19,15 +19,15 @@
 
 ---
 
-## Where AISOS Wins
+## Where AGRUS Wins
 
 ### 1. Autonomous Response with Human-on-the-Loop
 
-CrowdStrike detects and alerts. AISOS detects, investigates, scores, decides, and acts — with a human auditing, not approving every action. This is a fundamentally different operational model.
+CrowdStrike detects and alerts. AGRUS detects, investigates, scores, decides, and acts — with a human auditing, not approving every action. This is a fundamentally different operational model.
 
 ### 2. Domain-Specialized Security AI
 
-Every competitor uses either rule-based detection or a general-purpose LLM (GPT-4, Claude) bolted onto their existing pipeline. AISOS runs a fine-tuned security reasoning engine — trained exclusively on MITRE ATT&CK, CVE data, and real incident reports. It reasons like a senior analyst, not a chatbot.
+Every competitor uses either rule-based detection or a general-purpose LLM (GPT-4, Claude) bolted onto their existing pipeline. AGRUS runs a fine-tuned security reasoning engine — trained exclusively on MITRE ATT&CK, CVE data, and real incident reports. It reasons like a senior analyst, not a chatbot.
 
 This matters because:
 - General LLMs have weak security priors
@@ -37,7 +37,7 @@ This matters because:
 
 ### 3. Full Stack: Telemetry → Response in One Platform
 
-Wiz does posture. Falco does detection. SOAR does response. Customers buy all three, integrate them, and manage three vendors. AISOS is one platform from eBPF sensor to autonomous action. Fewer vendors, simpler architecture, lower total cost.
+Wiz does posture. Falco does detection. SOAR does response. Customers buy all three, integrate them, and manage three vendors. AGRUS is one platform from eBPF sensor to autonomous action. Fewer vendors, simpler architecture, lower total cost.
 
 ### 4. Open Architecture
 
@@ -47,12 +47,12 @@ Built on open standards: eBPF, OpenTelemetry, NATS/Kafka, OPA. Customers are not
 
 ## Target Market
 
-**Initial wedge:** Startups and mid-market companies running Kubernetes. They have real security needs but cannot afford a 10-person SOC team. AISOS gives them autonomous protection with minimal headcount.
+**Initial wedge:** Startups and mid-market companies running Kubernetes. They have real security needs but cannot afford a 10-person SOC team. AGRUS gives them autonomous protection with minimal headcount.
 
-**Expansion:** Enterprise SOC augmentation. Large teams drowning in alerts. AISOS reduces analyst workload from 10,000 alerts/day to ~12 escalations/day.
+**Expansion:** Enterprise SOC augmentation. Large teams drowning in alerts. AGRUS reduces analyst workload from 10,000 alerts/day to ~12 escalations/day.
 
 ---
 
 ## Positioning Statement
 
-> AISOS is the only security platform with a domain-specialized AI reasoning engine — not a general LLM, not a playbook engine — that operates autonomously with human oversight at every tier.
+> AGRUS is the only security platform with a domain-specialized AI reasoning engine — not a general LLM, not a playbook engine — that operates autonomously with human oversight at every tier.

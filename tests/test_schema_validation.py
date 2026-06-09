@@ -79,7 +79,7 @@ class SchemaValidationTests(TestCase):
             action_type="kill_process_simulated",
             target="web-01",
             host="web-01",
-            executed_by="aisos-demo",
+            executed_by="agrus-demo",
             approved_by=None,
             command="simulate:kill_process",
             result="simulated",
