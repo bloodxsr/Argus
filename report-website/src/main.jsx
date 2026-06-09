@@ -51,7 +51,7 @@ function App() {
     <>
       <header>
         <div>
-          <h1>AISOS Incident Reports</h1>
+          <h1>Argus Incident Reports</h1>
           <p>Audit view for decisions, response actions, and human review state.</p>
         </div>
         <span>{status} · {mongoConnected ? "Mongo on" : "Mongo reports off"}</span>

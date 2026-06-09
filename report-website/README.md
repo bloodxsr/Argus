@@ -1,6 +1,6 @@
-# AISOS Report Website
+# Argus Report Website
 
-MERN stack audit and reporting app for AISOS.
+MERN stack audit and reporting app for Argus.
 
 `index.html` is the Vite React entry point. `static-prototype.html` preserves the earlier standalone prototype.
 

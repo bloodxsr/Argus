@@ -39,7 +39,7 @@ async function securityAiFetch(path, options = {}) {
 
 app.get("/api/health", (_req, res) => {
   res.json({
-    service: "aisos-test-website",
+    service: "argus-test-website",
     mongoConnected: mongoose.connection.readyState === 1,
     securityAiBaseUrl
   });
@@ -149,5 +149,5 @@ app.use((error, _req, res, _next) => {
 });
 
 app.listen(port, () => {
-  console.log(`AISOS test website API running on http://127.0.0.1:${port}`);
+  console.log(`Argus test website API running on http://127.0.0.1:${port}`);
 });

@@ -2,7 +2,7 @@
 
 ## Overview
 
-AISOS uses MERN for the two website surfaces and keeps the Security AI / agent layer in Python and future Rust services.
+Argus uses MERN for the two website surfaces and keeps the Security AI / agent layer in Python and future Rust services.
 
 ```text
 Test Website MERN       Report Website MERN

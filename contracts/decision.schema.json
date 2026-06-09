@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://aisos.local/contracts/decision.schema.json",
+  "$id": "https://argus.local/contracts/decision.schema.json",
   "title": "Decision",
   "type": "object",
   "required": ["incident_id", "action", "confidence", "requires_human_approval", "auto_execute", "reasoning", "fallback_action", "audit_trail"],

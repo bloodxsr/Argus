@@ -1,6 +1,6 @@
 # Autonomous AI Security Operating System
 
-AISOS is an autonomous cybersecurity platform capable of monitoring, investigating, responding, and learning from security incidents in real time.
+Argus is an autonomous cybersecurity platform capable of monitoring, investigating, responding, and learning from security incidents in real time.
 
 ## Related Notes
 - [[01 - System Architecture]]
@@ -36,11 +36,11 @@ Detect → Investigate → Decide → Act → Human Audits
 
 ## Operating Model: Human-on-the-Loop
 
-AISOS does not remove humans. It removes humans from every alert.
+Argus does not remove humans. It removes humans from every alert.
 
-Current reality: A SOC analyst handles 10,000+ alerts/day. They miss real threats because of volume. AISOS collapses that to ~12 high-confidence escalations per day — the ones that actually need a human mind.
+Current reality: A SOC analyst handles 10,000+ alerts/day. They miss real threats because of volume. Argus collapses that to ~12 high-confidence escalations per day — the ones that actually need a human mind.
 
-| Old Model | AISOS Model |
+| Old Model | Argus Model |
 |---|---|
 | Human reviews every alert | Human reviews AI escalations only |
 | Human writes playbooks | Human corrects AI decisions via feedback |
@@ -55,13 +55,13 @@ Medium Risk → System recommends. Human approves or rejects.
 High Risk   → System acts immediately. Human audits the action after.
 ```
 
-This framing makes AISOS deployable in enterprise environments — legal accountability is preserved, compliance is maintained, autonomy is still the selling point.
+This framing makes Argus deployable in enterprise environments — legal accountability is preserved, compliance is maintained, autonomy is still the selling point.
 
 ---
 
 ## Core AI Innovation
 
-AISOS runs a custom domain-specialized security reasoning engine — **not a general-purpose LLM**.
+Argus runs a custom domain-specialized security reasoning engine — **not a general-purpose LLM**.
 
 See: [[Security AI Agent]]
 
@@ -77,7 +77,7 @@ This is the key differentiator over competitors who bolt a generic LLM onto an e
 
 ## Long-Term Vision
 
-AISOS becomes a distributed autonomous security platform that:
+Argus becomes a distributed autonomous security platform that:
 
 - Watches all infrastructure 24/7
 - Understands what normal looks like per entity

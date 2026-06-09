@@ -43,7 +43,7 @@ def replay_scenario_by_id(scenario_id: str, engine: SecurityDecisionEngine | Non
 def main(argv: list[str] | None = None) -> int:
     import argparse
 
-    parser = argparse.ArgumentParser(description="Replay an AISOS demo scenario.")
+    parser = argparse.ArgumentParser(description="Replay an Argus demo scenario.")
     parser.add_argument("scenario_id", nargs="?", help="Scenario ID to replay. Lists scenarios when omitted.")
     parser.add_argument("--compact", action="store_true", help="Print compact JSON.")
     args = parser.parse_args(argv)
@@ -77,7 +77,7 @@ def _build_action_record(scenario: Scenario, decision) -> ActionRecord:
         action_type=action_type,
         target=scenario.incident.asset_id,
         host=scenario.incident.host,
-        executed_by="aisos-demo",
+        executed_by="argus-demo",
         approved_by=None,
         command=f"simulate:{decision.action}",
         result=result,

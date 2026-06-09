@@ -1,6 +1,6 @@
-# AISOS Security AI Service
+# Argus Security AI Service
 
-This repository starts the Python Security AI layer for AISOS.
+This repository starts the Python Security AI layer for Argus.
 
 ## What it contains
 

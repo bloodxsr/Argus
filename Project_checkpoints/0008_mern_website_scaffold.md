@@ -40,8 +40,8 @@ OK
 Package JSON syntax check passed:
 
 ```text
-test-website/package.json -> aisos-test-website
-report-website/package.json -> aisos-report-website
+test-website/package.json -> argus-test-website
+report-website/package.json -> argus-report-website
 ```
 
 Node/npm note:

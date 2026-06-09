@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://aisos.local/contracts/unified_event.schema.json",
+  "$id": "https://argus.local/contracts/unified_event.schema.json",
   "title": "UnifiedEvent",
   "type": "object",
   "required": ["schema_version", "event_id", "source", "event_type", "timestamp", "host", "host_ip", "environment", "payload"],

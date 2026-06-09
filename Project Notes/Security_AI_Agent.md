@@ -1,6 +1,6 @@
 # Security AI Agent
 
-The core reasoning brain of AISOS. A domain-specialized AI that thinks like a senior security analyst — not a general-purpose chatbot.
+The core reasoning brain of Argus. A domain-specialized AI that thinks like a senior security analyst — not a general-purpose chatbot.
 
 ## Related Notes
 - [[Decision Engine]]
@@ -20,7 +20,7 @@ This is the key architectural difference from competitors who use GPT-4 or Claud
 - Every MITRE ATT&CK tactic, technique, and sub-technique
 - 200,000+ CVE entries with CVSS scores and exploit context
 - Real-world incident reports (DFIR reports, threat actor TTPs)
-- Historical AISOS incidents and analyst decisions
+- Historical Argus incidents and analyst decisions
 - Live threat intelligence feeds (abuse.ch, OTX, VirusTotal)
 
 ---
@@ -69,7 +69,7 @@ The current Python implementation mirrors Ollama's local-serving style:
 | CISA KEV catalog | Actively exploited vulnerabilities |
 | abuse.ch datasets | Live malware IOCs |
 | Mandiant / CrowdStrike threat reports (public) | Real APT TTPs |
-| AISOS incident history | Platform-specific learned context |
+| Argus incident history | Platform-specific learned context |
 
 ---
 
@@ -120,7 +120,7 @@ axolotl train security_finetune.yaml
 
 ```bash
 # Self-hosted via vLLM
-vllm serve aisos-security-7b --quantization awq --max-model-len 4096
+vllm serve argus-security-7b --quantization awq --max-model-len 4096
 
 # Or for MVP: call Mistral API with system prompt built from security KB
 ```
@@ -180,7 +180,7 @@ For MVP: call Mistral API with a structured security system prompt. Cheap, fast 
 
 For production: self-hosted vLLM on a single A10G GPU handles ~200 concurrent requests. Multiple GPU nodes behind a load balancer handles enterprise scale.
 
-Fine-tune cadence: retrain monthly on new AISOS incident data + analyst corrections. This is the feedback loop that makes the model smarter over time on your specific infrastructure.
+Fine-tune cadence: retrain monthly on new Argus incident data + analyst corrections. This is the feedback loop that makes the model smarter over time on your specific infrastructure.
 
 ---
 

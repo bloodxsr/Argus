@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from security_ai_service.engine import SecurityDecisionEngine
 from security_ai_service.models import CompanyConstraints, IncidentContext
 
-app = FastAPI(title="AISOS Security AI Service")
+app = FastAPI(title="Argus Security AI Service")
 engine = SecurityDecisionEngine()
 
 

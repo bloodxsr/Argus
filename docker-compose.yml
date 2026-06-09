@@ -1,7 +1,7 @@
 services:
   mongo:
     image: mongo:7
-    container_name: aisos-mongo
+    container_name: argus-mongo
     restart: unless-stopped
     ports:
       - "27017:27017"
@@ -12,7 +12,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.security-ai
-    container_name: aisos-security-ai
+    container_name: argus-security-ai
     restart: unless-stopped
     ports:
       - "8000:8000"
@@ -20,14 +20,14 @@ services:
   test-website:
     build:
       context: ./test-website
-    container_name: aisos-test-website
+    container_name: argus-test-website
     restart: unless-stopped
     depends_on:
       - mongo
       - security-ai
     environment:
       PORT: 4100
-      MONGO_URI: mongodb://mongo:27017/aisos_test_website
+      MONGO_URI: mongodb://mongo:27017/argus_test_website
       SECURITY_AI_BASE_URL: http://security-ai:8000
       CORS_ORIGIN: http://127.0.0.1:4100
     ports:
@@ -36,14 +36,14 @@ services:
   report-website:
     build:
       context: ./report-website
-    container_name: aisos-report-website
+    container_name: argus-report-website
     restart: unless-stopped
     depends_on:
       - mongo
       - security-ai
     environment:
       PORT: 4200
-      MONGO_URI: mongodb://mongo:27017/aisos_report_website
+      MONGO_URI: mongodb://mongo:27017/argus_report_website
       SECURITY_AI_BASE_URL: http://security-ai:8000
       CORS_ORIGIN: http://127.0.0.1:4200
     ports:

@@ -43,7 +43,7 @@ Policies are written in Rego (OPA's language) and loaded at runtime. This means 
 
 ```rego
 # policy.rego
-package aisos.response
+package argus.response
 
 # High risk → automatic action unless asset is flagged no-auto
 default action = "observe"
@@ -94,7 +94,7 @@ async fn decide(
         }
     });
 
-    let policy_result = opa.evaluate("aisos/response", &input).await;
+    let policy_result = opa.evaluate("argus/response", &input).await;
 
     Decision {
         action: policy_result.action,
@@ -122,7 +122,7 @@ async fn decide(
   "audit_trail": {
     "policy_version": "v1.3.2",
     "risk_score": 82.0,
-    "ai_model_version": "aisos-security-7b-v2"
+    "ai_model_version": "argus-security-7b-v2"
   }
 }
 ```

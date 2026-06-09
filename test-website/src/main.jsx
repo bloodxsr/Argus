@@ -77,7 +77,7 @@ function App() {
     <>
       <header>
         <div>
-          <h1>AISOS Scenario Launcher</h1>
+          <h1>Argus Scenario Launcher</h1>
           <p>Synthetic attack replay for the AI-native SOAR pipeline.</p>
         </div>
         <span>{status} · {mongoConnected ? "Mongo on" : "Mongo history off"}</span>

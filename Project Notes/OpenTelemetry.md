@@ -47,9 +47,9 @@ processors:
         services: ["health-check", "metrics-collector"]
 
 exporters:
-  # Forward to AISOS telemetry processor
-  otlp/aisos:
-    endpoint: aisos-telemetry:4317
+  # Forward to Argus telemetry processor
+  otlp/argus:
+    endpoint: argus-telemetry:4317
     tls:
       insecure: true
 
@@ -58,7 +58,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch, filter]
-      exporters: [otlp/aisos]
+      exporters: [otlp/argus]
 ```
 
 ### Security-Relevant Span Detection
@@ -112,5 +112,5 @@ trace.set_tracer_provider(provider)
 ## Scalability
 
 - OTel Collector is horizontally scalable — run multiple instances behind a load balancer
-- Filter processor drops non-security spans before they hit AISOS — keeps volume manageable
-- At scale: OTel Collector cluster handles millions of spans/sec, only security-relevant ones (typically <1%) reach AISOS
+- Filter processor drops non-security spans before they hit Argus — keeps volume manageable
+- At scale: OTel Collector cluster handles millions of spans/sec, only security-relevant ones (typically <1%) reach Argus
