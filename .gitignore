@@ -58,3 +58,7 @@ Thumbs.db
 # Go and Rust
 agrus-gateway/gateway
 agrus-sensor/target/
+
+# AI Models and Datasets
+models/
+data/
