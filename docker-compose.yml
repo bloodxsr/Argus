@@ -1,0 +1,76 @@
+services:
+  nats:
+    image: nats:latest
+    container_name: nats
+    restart: unless-stopped
+    ports:
+      - "4222:4222"
+
+  mongo:
+    image: mongo:7
+    container_name: mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  security-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile.security-ai
+    container_name: security-ai
+    restart: unless-stopped
+    environment:
+      AGRUS_INTERNAL_TOKEN: "${AGRUS_INTERNAL_TOKEN}"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models
+      # TODO(hardening): Gives security-ai container control over host containers. Fine for hackathon demo.
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  gateway:
+    build:
+      context: ./gateway
+    container_name: gateway
+    restart: unless-stopped
+    depends_on:
+      - nats
+      - security-ai
+    environment:
+      SECURITY_AI_BASE_URL: http://security-ai:8000
+      NATS_URL: nats://nats:4222
+      AGRUS_SENSOR_TOKEN: "${AGRUS_SENSOR_TOKEN}"
+      AGRUS_ALLOWED_ORIGINS: "http://localhost:4200,http://127.0.0.1:4200"
+    ports:
+      - "8080:8080"
+
+  dashboard:
+    build:
+      context: ./dashboard
+    container_name: dashboard
+    restart: unless-stopped
+    depends_on:
+      - mongo
+      - gateway
+      - nats
+    environment:
+      PORT: 4200
+      MONGO_URI: mongodb://mongo:27017/agrus_report_website
+      SECURITY_AI_BASE_URL: http://security-ai:8000
+      AGRUS_INTERNAL_TOKEN: "${AGRUS_INTERNAL_TOKEN}"
+      CORS_ORIGIN: "*"
+      NATS_URL: nats://nats:4222
+    ports:
+      - "4200:4200"
+
+volumes:
+  mongo_data:

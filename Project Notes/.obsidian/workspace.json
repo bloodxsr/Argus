@@ -1,0 +1,204 @@
+{
+  "main": {
+    "id": "fde252e4002b0c6f",
+    "type": "split",
+    "children": [
+      {
+        "id": "95828ab0224a45f3",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "243ebe36af4880ff",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "3e429ebfe38b6e40",
+    "type": "split",
+    "children": [
+      {
+        "id": "415d8c8f0b574f5c",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "dc22fdf09f2aeb04",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "5b1938e1cf37bfeb",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "b72995fd804d2b7a",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "bba302ea398feb9b",
+    "type": "split",
+    "children": [
+      {
+        "id": "5f3757de556cf680",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "225aa47605746282",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "AGRUS_Implementation_Blueprint.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for AGRUS_Implementation_Blueprint"
+            }
+          },
+          {
+            "id": "7e8abec3bcea9301",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "AGRUS_Implementation_Blueprint.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from AGRUS_Implementation_Blueprint"
+            }
+          },
+          {
+            "id": "2560e1d33d792a48",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "615966de59bafda1",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "4ed66c5e5fb2da17",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "AGRUS_Implementation_Blueprint.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of AGRUS_Implementation_Blueprint"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "243ebe36af4880ff",
+  "lastOpenFiles": [
+    "Master_Architecture_and_Setup_Guide.md",
+    "AGRUS_Implementation_Blueprint.md",
+    "01 - System Architecture.md",
+    "00 - Project Vision.md",
+    "Investigation Agent.md",
+    "Monitoring Agent.md",
+    "Event Bus.md",
+    "Risk Assessment Agent.md",
+    "Autonomous Response.md",
+    "Decision Engine.md",
+    "eBPF.md",
+    "Welcome.md",
+    "Threat Intelligence Agent.md",
+    "Telemetry Layer.md",
+    "Risk Engine.md",
+    "Response Agent.md",
+    "OpenTelemetry.md",
+    "MVP Scope.md",
+    "Market Analysis.md"
+  ]
+}

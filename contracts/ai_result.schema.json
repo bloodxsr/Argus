@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agrus.local/contracts/ai_result.schema.json",
+  "title": "AIResult",
+  "type": "object",
+  "required": ["incident_id", "classification", "confidence", "mitre_techniques", "recommended_action", "escalate_to_human", "reasoning"],
+  "properties": {
+    "incident_id": {"type": "string", "minLength": 1},
+    "classification": {"type": "string", "minLength": 1},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "mitre_techniques": {"type": "array", "items": {"type": "string"}},
+    "recommended_action": {"type": "string", "minLength": 1},
+    "escalate_to_human": {"type": "boolean"},
+    "reasoning": {"type": "string"}
+  },
+  "additionalProperties": false
+}

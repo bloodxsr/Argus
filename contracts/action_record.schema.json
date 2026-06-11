@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agrus.local/contracts/action_record.schema.json",
+  "title": "ActionRecord",
+  "type": "object",
+  "required": ["action_id", "incident_id", "action_type", "target", "host", "executed_by", "approved_by", "command", "result", "rollback_cmd", "rolled_back", "timestamp"],
+  "properties": {
+    "action_id": {"type": "string", "minLength": 1},
+    "incident_id": {"type": "string", "minLength": 1},
+    "action_type": {"type": "string", "minLength": 1},
+    "target": {"type": "string"},
+    "host": {"type": "string"},
+    "executed_by": {"type": "string"},
+    "approved_by": {"type": ["string", "null"]},
+    "command": {"type": "string"},
+    "result": {"type": "string"},
+    "rollback_cmd": {"type": ["string", "null"]},
+    "rolled_back": {"type": "boolean"},
+    "timestamp": {"type": "string"}
+  },
+  "additionalProperties": false
+}

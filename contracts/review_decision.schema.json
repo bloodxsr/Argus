@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agrus.local/contracts/review_decision.schema.json",
+  "title": "ReviewDecision",
+  "type": "object",
+  "required": ["incident_id", "review_id", "analyst", "decision", "notes", "timestamp"],
+  "properties": {
+    "incident_id": {"type": "string", "minLength": 1},
+    "review_id": {"type": "string", "minLength": 1},
+    "analyst": {"type": "string"},
+    "decision": {"type": "string"},
+    "notes": {"type": "string"},
+    "timestamp": {"type": "string"}
+  },
+  "additionalProperties": false
+}

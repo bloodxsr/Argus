@@ -1,0 +1,16 @@
+.git
+.venv
+venv
+node_modules
+__pycache__
+*.pyc
+.env
+models/
+data/
+train/data/
+*.gguf
+
+# Exclude Rust workspaces from Docker context
+sensor/
+ebpf/
+windows-sensor/

@@ -1,0 +1,51 @@
+{
+  "scenario_id": "rce_c2_beacon",
+  "title": "RCE With C2 Beacon",
+  "description": "A web process spawns bash from /tmp and connects to an external command-and-control endpoint.",
+  "incident": {
+    "incident_id": "inc-scn-rce",
+    "summary": "nginx spawned bash from /tmp and connected to a known C2 beacon external IP",
+    "risk_score": 90,
+    "asset_id": "web-01",
+    "host": "web-01",
+    "environment": "production",
+    "hour_of_day": 10,
+    "labels": ["attack", "rce"],
+    "company": "demo-company"
+  },
+  "expected_outcome": {
+    "classification": "Remote Code Execution + C2 Beaconing",
+    "action": "kill_process",
+    "auto_execute": false,
+    "requires_human_approval": true,
+    "confidence_at_least": 0.9
+  },
+  "events": [
+    {
+      "schema_version": "1.0",
+      "event_id": "evt-rce-1",
+      "source": "test-website",
+      "event_type": "process_spawn",
+      "timestamp": "2026-06-09T10:00:00Z",
+      "host": "web-01",
+      "host_ip": "10.0.1.20",
+      "environment": "production",
+      "pid": 4412,
+      "uid": 33,
+      "payload": {"parent": "nginx", "process": "bash", "path": "/tmp/.x/bash"}
+    },
+    {
+      "schema_version": "1.0",
+      "event_id": "evt-rce-2",
+      "source": "test-website",
+      "event_type": "network_connection",
+      "timestamp": "2026-06-09T10:00:03Z",
+      "host": "web-01",
+      "host_ip": "10.0.1.20",
+      "environment": "production",
+      "pid": 4412,
+      "uid": 33,
+      "payload": {"destination_ip": "203.0.113.50", "destination_port": 443, "reputation": "known malicious"}
+    }
+  ]
+}
