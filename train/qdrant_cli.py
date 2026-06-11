@@ -5,8 +5,8 @@ from typing import Optional, Any
 
 try:
     from qdrant_client import QdrantClient
-except Exception:  # pragma: no cover - optional deps
-    QdrantClient = None  # type: ignore
+except Exception:  
+    QdrantClient = None  
 
 
 def connect_client(host: str, port: int) -> Any:

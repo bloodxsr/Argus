@@ -10,12 +10,12 @@ function App() {
   const [baselines, setBaselines] = useState([]);
   const [containers, setContainers] = useState([]);
   
-  const [tab, setTab] = useState("active"); // 'active', 'solved', 'correlations', 'baselines', 'containers'
+  const [tab, setTab] = useState("active");  
   const [selectedReport, setSelectedReport] = useState(null);
 
   useEffect(() => {
     fetchAllData();
-    const interval = setInterval(fetchAllData, 3000); // Live SOC polling
+    const interval = setInterval(fetchAllData, 3000);  
     return () => clearInterval(interval);
   }, []);
 

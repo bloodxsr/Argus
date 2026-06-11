@@ -32,7 +32,7 @@ class PythonScanner(ScannerProtocol):
 
         for i, line in enumerate(lines):
             line_num = i + 1
-            # Check for command injection
+            
             if re.search(r'(os\.system|subprocess\.(Popen|run|call)).*shell\s*=\s*True', line) or re.search(r'os\.popen\(', line):
                 findings.append(Finding(
                     file_path=file_path,
@@ -41,7 +41,7 @@ class PythonScanner(ScannerProtocol):
                     severity="CRITICAL",
                     code_snippet=line.strip()
                 ))
-            # Check for insecure deserialization
+            
             if re.search(r'pickle\.loads\(', line):
                 findings.append(Finding(
                     file_path=file_path,
@@ -50,8 +50,8 @@ class PythonScanner(ScannerProtocol):
                     severity="CRITICAL",
                     code_snippet=line.strip()
                 ))
-            # Check for hardcoded secrets
-            if re.search(r'(api_key|password|secret|token)\s*=\s*["\'][A-Za-z0-9_\-]+["\']', line, re.IGNORECASE):
+            
+            if re.search(r'(api_key|password|secret|token)\s*=\s*["\'][A-Za-z0-9_\-]+["\']', line, re.IGNORECASE) and not re.search(r'(print|log|logger)\(', line):
                 findings.append(Finding(
                     file_path=file_path,
                     line_number=line_num,
@@ -59,8 +59,8 @@ class PythonScanner(ScannerProtocol):
                     severity="HIGH",
                     code_snippet=line.strip()
                 ))
-            # Check for SQL injection (basic string formatting in execute)
-            if re.search(r'\.execute\(.*(%s|\{.*\}|%|\+)', line):
+            
+            if re.search(r'\.execute\(\s*f["\']', line) or (re.search(r'\.execute\(.*(%|\+)', line) and not re.search(r'\.execute\([^,]+,\s*\(', line)):
                 findings.append(Finding(
                     file_path=file_path,
                     line_number=line_num,
@@ -83,7 +83,7 @@ class JavaScriptScanner(ScannerProtocol):
 
         for i, line in enumerate(lines):
             line_num = i + 1
-            # Check for eval()
+            
             if re.search(r'\beval\(', line):
                 findings.append(Finding(
                     file_path=file_path,
@@ -92,7 +92,7 @@ class JavaScriptScanner(ScannerProtocol):
                     severity="CRITICAL",
                     code_snippet=line.strip()
                 ))
-            # Check for prototype pollution
+            
             if re.search(r'__proto__|constructor\.prototype', line):
                 findings.append(Finding(
                     file_path=file_path,
@@ -101,7 +101,7 @@ class JavaScriptScanner(ScannerProtocol):
                     severity="HIGH",
                     code_snippet=line.strip()
                 ))
-            # Check for path traversal
+            
             if re.search(r'path\.join\(.*req\.', line) or re.search(r'fs\.readFile\(.*req\.', line):
                 findings.append(Finding(
                     file_path=file_path,

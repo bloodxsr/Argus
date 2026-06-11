@@ -33,7 +33,7 @@ def main() -> int:
 def render_type(schema: dict) -> str:
     title = schema["title"]
     required = set(schema.get("required", ()))
-    lines = [f"export type {title} = {{"]
+    lines = [f"export type {title} = { "]
     for key, value in schema.get("properties", {}).items():
         optional = "" if key in required else "?"
         lines.append(f"  {key}{optional}: {ts_type(value)};")

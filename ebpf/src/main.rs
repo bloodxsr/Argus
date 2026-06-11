@@ -78,7 +78,7 @@ fn try_sys_enter_openat(ctx: TracePointContext) -> Result<u32, u32> {
     event.pid = pid_tgid as u32;
     event.comm = bpf_get_current_comm().unwrap_or([0; 16]);
 
-    // Tracepoint sys_enter_openat format: filename is at offset 24
+     
     let filename_ptr_val: usize = unsafe { ctx.read_at(24).unwrap_or(0) };
     let filename_ptr = filename_ptr_val as *const u8;
     
@@ -98,7 +98,7 @@ pub fn sys_enter_connect(ctx: TracePointContext) -> u32 {
     }
 }
 
-// Minimal sockaddr_in for eBPF parsing
+ 
 #[repr(C)]
 struct SockAddrIn {
     sin_family: u16,
@@ -111,11 +111,11 @@ fn try_sys_enter_connect(ctx: TracePointContext) -> Result<u32, u32> {
     let pid_tgid = bpf_get_current_pid_tgid();
     let comm = bpf_get_current_comm().unwrap_or([0; 16]);
 
-    // Tracepoint sys_enter_connect format: uservaddr is at offset 24
+     
     let sockaddr_ptr_val: usize = unsafe { ctx.read_at(24).unwrap_or(0) };
     let sockaddr_ptr = sockaddr_ptr_val as *const SockAddrIn;
     
-    // Only proceed if it's not null
+     
     if sockaddr_ptr.is_null() {
         return Ok(0);
     }
@@ -129,7 +129,7 @@ fn try_sys_enter_connect(ctx: TracePointContext) -> Result<u32, u32> {
         )
     };
     
-    if sin_family == 2 { // AF_INET
+    if sin_family == 2 {  
         let event = NetworkConnEvent {
             tgid: (pid_tgid >> 32) as u32,
             pid: pid_tgid as u32,

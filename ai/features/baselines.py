@@ -39,7 +39,7 @@ class BaselineEngine:
         self._persistence_path = persistence_path
         self._load()
 
-    # ── Public API ──────────────────────────────────────────────
+    
 
     def update(
         self,
@@ -69,7 +69,7 @@ class BaselineEngine:
         b.event_count += 1
         b.last_seen = now
 
-        # Auto-save every 100 events
+        
         if b.event_count % 100 == 0:
             self._save()
 
@@ -100,7 +100,7 @@ class BaselineEngine:
         explanations = []
         total = b.event_count
 
-        # ── Hour deviation ──
+        
         hour_count = b.hour_histogram.get(hour, 0)
         hour_ratio = hour_count / total if total > 0 else 0
         if hour_ratio < 0.02:
@@ -112,14 +112,14 @@ class BaselineEngine:
         else:
             deviations.append(0.0)
 
-        # Detect off-hours: if >80% of events are during business hours but this one is not
+        
         business_hours_count = sum(b.hour_histogram.get(h, 0) for h in range(8, 19))
         business_ratio = business_hours_count / total if total > 0 else 0
         if business_ratio > 0.8 and (hour < 6 or hour > 22):
             deviations.append(0.85)
             explanations.append(f"Entity is {business_ratio:.0%} business-hours active, but current event is at {hour}:00")
 
-        # ── Process deviation ──
+        
         if process:
             proc_count = b.process_freq.get(process, 0)
             if proc_count == 0:
@@ -131,7 +131,7 @@ class BaselineEngine:
                     deviations.append(0.5)
                     explanations.append(f"process='{process}' is rare ({proc_ratio:.2%})")
 
-        # ── IP deviation ──
+        
         if ip:
             ip_count = b.ip_freq.get(ip, 0)
             if ip_count == 0:
@@ -145,7 +145,7 @@ class BaselineEngine:
 
         overall = max(deviations) if deviations else 0.0
 
-        # Build typical behavior summary
+        
         top_hours = sorted(b.hour_histogram.items(), key=lambda x: -x[1])[:3]
         top_procs = sorted(b.process_freq.items(), key=lambda x: -x[1])[:5]
 
@@ -166,7 +166,7 @@ class BaselineEngine:
     def save(self) -> None:
         self._save()
 
-    # ── Persistence ─────────────────────────────────────────────
+    
 
     def _save(self) -> None:
         os.makedirs(os.path.dirname(self._persistence_path) or ".", exist_ok=True)

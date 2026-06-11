@@ -46,7 +46,7 @@ def list_containers() -> List[ContainerInfo]:
         if not raw:
             return []
 
-        # podman outputs one JSON object per line, docker outputs an array
+        
         containers = []
         if raw.startswith("["):
             entries = json.loads(raw)
@@ -76,8 +76,8 @@ def get_container_for_pid(pid: int) -> Optional[str]:
     try:
         with open(cgroup_path, "r") as f:
             for line in f:
-                # cgroup v2: 0::/system.slice/docker-<id>.scope
-                # cgroup v1: 12:devices:/docker/<id>
+                
+                
                 for marker in ("docker-", "docker/", "containerd-", "cri-containerd-", "libpod-"):
                     idx = line.find(marker)
                     if idx != -1:
@@ -99,7 +99,7 @@ def quarantine_container(container_id: str) -> dict:
     result = {"container_id": container_id, "action": "quarantine", "networks_disconnected": []}
 
     try:
-        # Get the container's current networks
+        
         inspect = subprocess.run(
             [rt, "inspect", container_id, "--format", "json"],
             capture_output=True, text=True, timeout=10
@@ -114,7 +114,7 @@ def quarantine_container(container_id: str) -> dict:
 
         networks = data.get("NetworkSettings", {}).get("Networks", {})
 
-        # Disconnect from every network
+        
         for net_name in networks:
             disconnect = subprocess.run(
                 [rt, "network", "disconnect", "--force", net_name, container_id],
@@ -123,7 +123,7 @@ def quarantine_container(container_id: str) -> dict:
             if disconnect.returncode == 0:
                 result["networks_disconnected"].append(net_name)
 
-        # Pause the container to freeze all processes
+        
         subprocess.run([rt, "pause", container_id], capture_output=True, timeout=10)
         result["status"] = "quarantined"
 

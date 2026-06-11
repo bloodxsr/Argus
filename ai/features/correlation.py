@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
 
-# MITRE ATT&CK Kill Chain stages with representative technique IDs
+
 MITRE_KILL_CHAIN: List[Tuple[str, List[str]]] = [
     ("reconnaissance",        ["T1595", "T1592", "T1589", "T1590", "T1046"]),
     ("initial_access",        ["T1566", "T1190", "T1133", "T1078", "T1105"]),
@@ -30,7 +30,7 @@ MITRE_KILL_CHAIN: List[Tuple[str, List[str]]] = [
     ("impact",                ["T1486", "T1490", "T1489"]),
 ]
 
-# Reverse lookup: technique → stage name
+
 _TECHNIQUE_TO_STAGE: Dict[str, str] = {}
 for stage_name, techniques in MITRE_KILL_CHAIN:
     for t in techniques:
@@ -56,9 +56,9 @@ class CorrelatedIncident:
     entity: str
     events: List[StoredEvent]
     kill_chain_stages_hit: List[str]
-    kill_chain_coverage: float      # 0.0 – 1.0, fraction of kill chain covered
+    kill_chain_coverage: float      
     time_span_hours: float
-    severity: str                   # CRITICAL / HIGH / MEDIUM
+    severity: str                   
     summary: str
 
 
@@ -67,7 +67,7 @@ class CorrelationEngine:
 
     def __init__(self, window_days: int = 7) -> None:
         self._window_seconds = window_days * 86400
-        # Indexed by entity key (host or asset_id)
+        
         self._events_by_entity: Dict[str, List[StoredEvent]] = defaultdict(list)
 
     def ingest(
@@ -87,7 +87,7 @@ class CorrelationEngine:
         """
         now = timestamp or time.time()
 
-        # Map techniques to kill chain stages
+        
         stages = list(dict.fromkeys(
             _TECHNIQUE_TO_STAGE[t]
             for t in mitre_techniques
@@ -105,15 +105,15 @@ class CorrelationEngine:
             kill_chain_stages=stages,
         )
 
-        # Index under both host and asset_id
+        
         for key in {host, asset_id}:
             if key and key != "unknown":
                 self._events_by_entity[key].append(event)
 
-        # Prune old events outside the sliding window
+        
         self._prune(now)
 
-        # Check for correlations
+        
         for key in {host, asset_id}:
             if key and key != "unknown":
                 correlated = self._check_correlation(key, now)
@@ -152,7 +152,7 @@ class CorrelationEngine:
                 results.append(correlated)
         return results
 
-    # ── Internal ────────────────────────────────────────────────
+    
 
     def _prune(self, now: float) -> None:
         """Remove events older than the sliding window."""
@@ -171,7 +171,7 @@ class CorrelationEngine:
         if len(events) < 2:
             return None
 
-        # Collect all kill chain stages hit across all events
+        
         all_stages = set()
         for e in events:
             all_stages.update(e.kill_chain_stages)
@@ -179,13 +179,13 @@ class CorrelationEngine:
         if len(all_stages) < 2:
             return None
 
-        # Check ordering: do the stages appear in kill chain order?
+        
         stage_order = [name for name, _ in MITRE_KILL_CHAIN]
         hit_ordered = [s for s in stage_order if s in all_stages]
 
         coverage = len(hit_ordered) / len(stage_order)
 
-        # Only flag as correlated if we see at least 2 distinct stages
+        
         if len(hit_ordered) >= 2:
             sorted_events = sorted(events, key=lambda e: e.timestamp)
             time_span = (sorted_events[-1].timestamp - sorted_events[0].timestamp) / 3600

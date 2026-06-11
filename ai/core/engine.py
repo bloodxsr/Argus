@@ -25,6 +25,7 @@ class HeuristicSecurityLLM:
     """
 
     _state_lock = asyncio.Lock()
+    _sync_lock = __import__("threading").Lock()
 
     def __init__(
         self,
@@ -38,17 +39,17 @@ class HeuristicSecurityLLM:
         self.knowledge_base = knowledge_base or SecurityKnowledgeBase()
         self.prompt_builder = prompt_builder or SecurityPromptBuilder()
         self.backend = backend or self._default_backend()
-        # retriever may be unavailable; QdrantRetriever will gracefully fallback
+        
         self.retriever = retriever or QdrantRetriever()
-        # UEBA baseline engine — learns what is "normal" for each entity
+        
         self.baseline_engine = baseline_engine or BaselineEngine()
-        # APT correlation engine — stitches events into kill chain timelines
+        
         self.correlation_engine = correlation_engine or CorrelationEngine()
 
     def _default_backend(self) -> SecurityModelBackend:
         heuristic = HeuristicSecurityBackend(self.knowledge_base)
 
-        # Priority 1: Fine-tuned Llama 3.1 8B (if adapters exist on disk)
+        
         import os
         adapter_path = getenv("AGRUS_MODEL_PATH", "models/agrus-v1-final")
         if os.path.isdir(adapter_path) and os.path.exists(os.path.join(adapter_path, "adapter_config.json")):
@@ -57,7 +58,7 @@ class HeuristicSecurityLLM:
                 fallback=heuristic,
             )
 
-        # Priority 2: Ollama (if configured via env var)
+        
         if getenv("SECURITY_AI_OLLAMA_BASE_URL"):
             return OllamaChatBackend(
                 model=getenv("SECURITY_AI_OLLAMA_MODEL", "llama3.1"),
@@ -65,11 +66,11 @@ class HeuristicSecurityLLM:
                 fallback=heuristic,
             )
 
-        # Priority 3: Analytical heuristic engine (always available)
+        
         return heuristic
 
     async def analyze_async(self, incident: IncidentContext) -> AIResult:
-        # ── UEBA: Update baseline and calculate deviation ──
+        
         entity_key = incident.asset_id or incident.host or "unknown"
         process = None
         dst_ip = None
@@ -96,11 +97,11 @@ class HeuristicSecurityLLM:
             ip=dst_ip,
         )
 
-        # ── Core AI inference ──
+        
         retrieved_context = self.retriever.search(incident.summary, limit=3) or self.knowledge_base.retrieve(incident)
         prompt = self.prompt_builder.build(incident, retrieved_context)
 
-        # Inject UEBA context into the prompt's user text
+        
         if deviation.get("has_baseline") and deviation.get("overall_deviation", 0) > 0.3:
             ueba_context = (
                 f"\n[UEBA ALERT] Entity '{entity_key}' behavioral deviation: {deviation['overall_deviation']:.0%}. "
@@ -113,7 +114,7 @@ class HeuristicSecurityLLM:
         draft = await asyncio.to_thread(self.backend.generate, prompt, incident)
         ai_result = self._draft_to_ai_result(incident, draft, prompt)
 
-        # ── APT Correlation: Ingest and check for multi-stage attacks ──
+        
         async with self._state_lock:
             correlated = self.correlation_engine.ingest(
                 incident_id=incident.incident_id,
@@ -124,7 +125,7 @@ class HeuristicSecurityLLM:
                 action=ai_result.recommended_action,
             )
 
-        # If a multi-stage attack is detected, escalate the result
+        
         if correlated:
             ai_result = AIResult(
                 incident_id=ai_result.incident_id,
@@ -136,7 +137,7 @@ class HeuristicSecurityLLM:
                 reasoning=f"{ai_result.reasoning}; APT_CORRELATION: {correlated.severity} — {correlated.summary}",
             )
 
-        # Attach UEBA deviation to the reasoning if significant
+        
         if deviation.get("has_baseline") and deviation.get("overall_deviation", 0) > 0.3:
             ai_result = AIResult(
                 incident_id=ai_result.incident_id,
@@ -151,7 +152,7 @@ class HeuristicSecurityLLM:
         return ai_result
 
     def analyze(self, incident: IncidentContext) -> AIResult:
-        # ── UEBA: Update baseline and calculate deviation ──
+        
         entity_key = incident.asset_id or incident.host or "unknown"
         process = None
         dst_ip = None
@@ -162,25 +163,26 @@ class HeuristicSecurityLLM:
                 if label.startswith("dst_ip:"):
                     dst_ip = label.split(":", 1)[1]
 
-        self.baseline_engine.update(
-            entity_id=entity_key,
-            hour=incident.hour_of_day,
-            process=process,
-            ip=dst_ip,
-            event_type=next((l for l in incident.labels if l in ("PROCESS_START", "FILE_ACCESS", "NETWORK_CONNECT")), None) if incident.labels else None,
-        )
-        deviation = self.baseline_engine.get_deviation(
-            entity_id=entity_key,
-            hour=incident.hour_of_day,
-            process=process,
-            ip=dst_ip,
-        )
+        with self._sync_lock:
+            self.baseline_engine.update(
+                entity_id=entity_key,
+                hour=incident.hour_of_day,
+                process=process,
+                ip=dst_ip,
+                event_type=next((l for l in incident.labels if l in ("PROCESS_START", "FILE_ACCESS", "NETWORK_CONNECT")), None) if incident.labels else None,
+            )
+            deviation = self.baseline_engine.get_deviation(
+                entity_id=entity_key,
+                hour=incident.hour_of_day,
+                process=process,
+                ip=dst_ip,
+            )
 
-        # ── Core AI inference ──
+        
         retrieved_context = self.retriever.search(incident.summary, limit=3) or self.knowledge_base.retrieve(incident)
         prompt = self.prompt_builder.build(incident, retrieved_context)
 
-        # Inject UEBA context into the prompt's user text
+        
         if deviation.get("has_baseline") and deviation.get("overall_deviation", 0) > 0.3:
             ueba_context = (
                 f"\n[UEBA ALERT] Entity '{entity_key}' behavioral deviation: {deviation['overall_deviation']:.0%}. "
@@ -193,17 +195,18 @@ class HeuristicSecurityLLM:
         draft = self.backend.generate(prompt, incident)
         ai_result = self._draft_to_ai_result(incident, draft, prompt)
 
-        # ── APT Correlation: Ingest and check for multi-stage attacks ──
-        correlated = self.correlation_engine.ingest(
-            incident_id=incident.incident_id,
-            host=incident.host,
-            asset_id=incident.asset_id,
-            mitre_techniques=ai_result.mitre_techniques,
-            classification=ai_result.classification,
-            action=ai_result.recommended_action,
-        )
+        
+        with self._sync_lock:
+            correlated = self.correlation_engine.ingest(
+                incident_id=incident.incident_id,
+                host=incident.host,
+                asset_id=incident.asset_id,
+                mitre_techniques=ai_result.mitre_techniques,
+                classification=ai_result.classification,
+                action=ai_result.recommended_action,
+            )
 
-        # If a multi-stage attack is detected, escalate the result
+        
         if correlated:
             ai_result = AIResult(
                 incident_id=ai_result.incident_id,
@@ -215,7 +218,7 @@ class HeuristicSecurityLLM:
                 reasoning=f"{ai_result.reasoning}; APT_CORRELATION: {correlated.severity} — {correlated.summary}",
             )
 
-        # Attach UEBA deviation to the reasoning if significant
+        
         if deviation.get("has_baseline") and deviation.get("overall_deviation", 0) > 0.3:
             ai_result = AIResult(
                 incident_id=ai_result.incident_id,

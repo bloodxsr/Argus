@@ -1,10 +1,10 @@
 module github.com/agrus-platform/agrus-gateway
 
-go 1.22.0
+go 1.25.0
 
 require (
 	github.com/go-chi/chi/v5 v5.0.12
-	github.com/nats-io/nats.go v1.52.0
+	github.com/nats-io/nats.go v1.34.0
 )
 
 require (

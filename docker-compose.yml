@@ -23,6 +23,8 @@ services:
     restart: unless-stopped
     environment:
       AGRUS_INTERNAL_TOKEN: "${AGRUS_INTERNAL_TOKEN}"
+      AGRUS_REMEDIATION_AUTO_PUSH: "${AGRUS_REMEDIATION_AUTO_PUSH}"
+      GITHUB_TOKEN: "${GITHUB_TOKEN}"
     ports:
       - "8000:8000"
     volumes:

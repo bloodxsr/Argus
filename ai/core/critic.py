@@ -35,7 +35,7 @@ class CriticVerifier:
         except ValidationError as e:
             issues.append(f"decision schema: {e}")
 
-        # domain checks
+        
         rec_action = ai_result.get("recommended_action")
         confidence = float(ai_result.get("confidence", 0.0))
         escalate = bool(ai_result.get("escalate_to_human", False))

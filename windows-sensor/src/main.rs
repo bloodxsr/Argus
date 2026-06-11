@@ -94,7 +94,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let client = Client::new();
         let host_name = hostname::get()?.into_string().unwrap_or_else(|_| "unknown-windows".to_string());
         
-        // MPSC Channel for Event Batching
+         
         let (tx, mut rx) = tokio::sync::mpsc::channel::<TelemetryEvent>(10000);
         let client_clone = client.clone();
         

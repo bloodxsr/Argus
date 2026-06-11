@@ -161,11 +161,11 @@ async def remediate(req: RemediateRequest):
         "result": result
     }
 
-@app.get("/scenarios")
+@app.get("/scenarios", dependencies=[Depends(verify_token)])
 async def scenarios():
     return {"scenarios": [scenario.to_dict() for scenario in load_scenarios()]}
 
-@app.post("/scenarios/{scenario_id}/run")
+@app.post("/scenarios/{scenario_id}/run", dependencies=[Depends(verify_token)])
 async def run_scenario(scenario_id: str):
     scenario = next((scenario for scenario in load_scenarios() if scenario.scenario_id == scenario_id), None)
     if scenario is None:
@@ -173,11 +173,11 @@ async def run_scenario(scenario_id: str):
     return replay_scenario(scenario, engine=engine)
 
 
-# ── UEBA Baseline Endpoints ────────────────────────────────────
+
 
 from .features.baselines import BaselineEngine
 
-@app.get("/baselines")
+@app.get("/baselines", dependencies=[Depends(verify_token)])
 async def list_baselines():
     """List all entities with behavioral baselines."""
     be = engine.llm.baseline_engine
@@ -193,7 +193,7 @@ async def list_baselines():
         ]
     }
 
-@app.get("/baselines/{entity_id}")
+@app.get("/baselines/{entity_id}", dependencies=[Depends(verify_token)])
 async def get_baseline(entity_id: str):
     """Get the full behavioral baseline for an entity."""
     be = engine.llm.baseline_engine
@@ -216,16 +216,16 @@ class DeviationRequest(BaseModel):
     process: Optional[str] = None
     ip: Optional[str] = None
 
-@app.post("/baselines/deviation")
+@app.post("/baselines/deviation", dependencies=[Depends(verify_token)])
 async def check_deviation(req: DeviationRequest):
     """Check how much a specific behavior deviates from an entity's baseline."""
     be = engine.llm.baseline_engine
     return be.get_deviation(req.entity_id, req.hour, req.process, req.ip)
 
 
-# ── APT Correlation Endpoints ──────────────────────────────────
 
-@app.get("/correlations")
+
+@app.get("/correlations", dependencies=[Depends(verify_token)])
 async def get_correlations():
     """Get all active multi-stage attack correlations."""
     ce = engine.llm.correlation_engine
@@ -247,7 +247,7 @@ async def get_correlations():
         ]
     }
 
-@app.get("/timeline/{entity}")
+@app.get("/timeline/{entity}", dependencies=[Depends(verify_token)])
 async def get_timeline(entity: str):
     """Get the chronological attack timeline for an entity."""
     ce = engine.llm.correlation_engine
@@ -259,11 +259,11 @@ async def get_timeline(entity: str):
     }
 
 
-# ── Container Runtime Security Endpoints ───────────────────────
+
 
 from .features.container import list_containers, quarantine_container, kill_container
 
-@app.get("/containers")
+@app.get("/containers", dependencies=[Depends(verify_token)])
 async def get_containers():
     """List all running containers on this host."""
     containers = list_containers()

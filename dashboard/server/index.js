@@ -51,7 +51,7 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-// Removed Demo Endpoints
+ 
 
 app.get("/api/reports", async (_req, res, next) => {
   try {
@@ -160,10 +160,10 @@ app.use((error, _req, res, _next) => {
 });
 
 app.listen(port, () => {
-  console.log(`AGRUS report website API running on http://127.0.0.1:${port}`);
+  console.log(`AGRUS report website API running on http: 
 });
 
-// Live Data Ingestion from Kernel Sensors
+ 
 const natsUrl = process.env.NATS_URL || "nats://127.0.0.1:4222";
 connect({ servers: natsUrl }).then(nc => {
   console.log(`Connected to live NATS telemetry at ${natsUrl}`);
@@ -181,7 +181,7 @@ connect({ servers: natsUrl }).then(nc => {
         const incidentInput = {
           incident_id: "inc-" + rawTelemetry.event_id,
           summary: `Suspicious activity from ${rawTelemetry.source}: ${rawTelemetry.event_type} on host ${rawTelemetry.host}. Payload: ${payloadStr}`,
-          risk_score: riskScore, // Automated Enrichment applied
+          risk_score: riskScore,  
           asset_id: rawTelemetry.host,
           host: rawTelemetry.host,
           hour_of_day: new Date().getUTCHours(),

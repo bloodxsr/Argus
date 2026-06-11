@@ -33,7 +33,7 @@ class SecurityModelBackend(Protocol):
 class HeuristicSecurityBackend:
     name = "heuristic-analytical"
 
-    # Behavioral threat signatures — each maps a pattern to a MITRE technique, severity weight, and action
+    
     THREAT_SIGNATURES: list[dict] = [
         {"pattern": r"(?:ignore previous instructions|override rules|system prompt)", "mitre": "", "weight": 0.9, "action": "observe", "label": "Prompt Injection Attempt", "escalate": True},
         {"pattern": r"(?=.*(?:c2|beacon|beaconing))(?=.*(?:/tmp/|spawned bash|mimikatz))", "mitre": "T1059.004", "weight": 0.98, "action": "kill_process", "label": "Remote Code Execution + C2 Beaconing"},
@@ -61,26 +61,26 @@ class HeuristicSecurityBackend:
 
         text = f"{incident.summary} {incident.host} {incident.asset_id} {' '.join(incident.labels)}"
         
-        # Layer 1: Regex-based behavioral signature matching
+        
         matched_sigs = []
         for compiled_re, sig in self._compiled:
             if compiled_re.search(text):
                 matched_sigs.append(sig)
 
-        # Layer 2: Knowledge base contextual retrieval scoring
+        
         retrieved_titles = [s.title.lower() for s in prompt.retrieved_context]
         retrieved_content = " ".join(s.content if hasattr(s, 'content') else s.summary for s in prompt.retrieved_context).lower()
         kb_threat_score = sum(1 for word in ("malicious", "threat", "exploit", "attack", "vulnerability", "compromise") if word in retrieved_content) / 6.0
 
-        # Layer 3: Risk-weighted aggregation
+        
         if matched_sigs:
-            # Sort by severity weight descending — the most dangerous match drives the classification
+            
             matched_sigs.sort(key=lambda s: s["weight"], reverse=True)
             primary = matched_sigs[0]
             
             mitre_chain = tuple(dict.fromkeys(s["mitre"] for s in matched_sigs if s["mitre"]))
             
-            # Confidence is driven by: signature weight + risk score normalization + KB corroboration
+            
             raw_confidence = primary["weight"]
             risk_factor = min(incident.risk_score / 100.0, 1.0)
             kb_boost = kb_threat_score * 0.1
@@ -105,7 +105,7 @@ class HeuristicSecurityBackend:
                 reasoning_layers=tuple(reasoning_layers),
             )
 
-        # Layer 4: No signature match — fall back to anomaly scoring
+        
         anomaly_score = 0.0
         anomaly_reasons = []
         
@@ -176,7 +176,7 @@ class OllamaChatBackend:
             method="POST",
         )
         try:
-            with urlopen(request, timeout=self.timeout_seconds) as response:  # nosec: stdlib HTTP client
+            with urlopen(request, timeout=self.timeout_seconds) as response:  
                 body = json.loads(response.read().decode("utf-8"))
         except (URLError, TimeoutError, ValueError, json.JSONDecodeError):
             return self.fallback.generate(prompt, incident)
@@ -289,8 +289,11 @@ class FineTunedLlamaBackend:
 
         import torch
 
-        # Build the chat template using the same prompt structure the model was fine-tuned on
-        input_text = f"Instruction: Analyze the following security event and provide a SOC assessment:\n{prompt.user_prompt}"
+        
+        if incident.incident_id == "remediation":
+            input_text = f"Instruction: {prompt.user_prompt}\nAssessment:\n"
+        else:
+            input_text = f"Instruction: Analyze the following security event and provide a SOC assessment:\n{prompt.user_prompt}\nAssessment:\n"
 
         inputs = self._tokenizer(input_text, return_tensors="pt", truncation=True, max_length=1024)
         inputs = {k: v.to(self._model.device) for k, v in inputs.items()}
@@ -313,7 +316,7 @@ class FineTunedLlamaBackend:
 
     def _parse_output(self, raw_output: str, incident: IncidentContext) -> ModelDraft:
         """Attempt to parse model output as JSON, with structured fallback extraction."""
-        # Try direct JSON parse first
+        
         try:
             data = json.loads(raw_output)
             return ModelDraft(
@@ -328,7 +331,7 @@ class FineTunedLlamaBackend:
         except (json.JSONDecodeError, KeyError, TypeError, ValueError):
             pass
 
-        # Try to find JSON embedded within the output
+        
         import re
         json_match = re.search(r'\{[^{}]*\}', raw_output, re.DOTALL)
         if json_match:
@@ -346,7 +349,7 @@ class FineTunedLlamaBackend:
             except (json.JSONDecodeError, KeyError, TypeError, ValueError):
                 pass
 
-        # Fallback: use the raw text as reasoning and classify based on keywords in the output
+        
         output_lower = raw_output.lower()
         is_threat = any(w in output_lower for w in ("malicious", "threat", "attack", "exploit", "critical", "kill"))
         

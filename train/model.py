@@ -28,7 +28,7 @@ class ModelArgs:
     multiple_of: int = 256
     norm_eps: float = 1e-5
     max_seq_len: int = 8192
-    dropout: float = 0.0  # Dropout is generally kept at 0 for modern LLM pre-training
+    dropout: float = 0.0  
 
 
 class RMSNorm(nn.Module):
@@ -93,7 +93,7 @@ class Attention(nn.Module):
 
         xq, xk = apply_rotary_emb(xq, xk, freqs_cis=freqs_cis)
 
-        # Broadcast KV heads for Grouped Query Attention
+        
         if self.n_rep > 1:
             xk = xk[:, :, :, None, :].expand(bsz, seqlen, self.n_local_kv_heads, self.n_rep, self.head_dim).reshape(bsz, seqlen, self.n_local_heads, self.head_dim)
             xv = xv[:, :, :, None, :].expand(bsz, seqlen, self.n_local_kv_heads, self.n_rep, self.head_dim).reshape(bsz, seqlen, self.n_local_heads, self.head_dim)
@@ -102,7 +102,7 @@ class Attention(nn.Module):
         xk = xk.transpose(1, 2)
         xv = xv.transpose(1, 2)
 
-        # Flash Attention 2
+        
         output = torch.nn.functional.scaled_dot_product_attention(
             xq, xk, xv, 
             attn_mask=mask, 
@@ -118,7 +118,7 @@ class FeedForward(nn.Module):
     """SwiGLU Feed-Forward Network."""
     def __init__(self, dim: int, hidden_dim: int, multiple_of: int, dropout: float):
         super().__init__()
-        # SwiGLU requires a specifically sized hidden dimension
+        
         hidden_dim = int(2 * hidden_dim / 3)
         hidden_dim = multiple_of * ((hidden_dim + multiple_of - 1) // multiple_of)
         
@@ -185,7 +185,7 @@ class CustomSecurityLLM(nn.Module):
             self.params.dim // self.params.n_heads, self.params.max_seq_len * 2
         )
 
-        # Weight tying: greatly stabilizes training and saves parameters
+        
         self.tok_embeddings.weight = self.output.weight
 
         self.apply(self._init_weights)

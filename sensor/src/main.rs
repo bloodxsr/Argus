@@ -35,7 +35,7 @@ pub struct NetworkConnEvent {
     pub dst_port: u16,
 }
 
-// The payload that matches our Python AI Engine's expected format
+ 
 #[derive(Serialize, Debug, Clone)]
 struct TelemetryEvent {
     schema_version: String,
@@ -53,7 +53,7 @@ struct TelemetryEvent {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Attempt to load .env file; ignore if not found
+     
     let _ = dotenvy::dotenv();
 
     tracing_subscriber::fmt::init();
@@ -72,7 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     });
 
-    // Attempt to load real eBPF bytecode 
+     
     let bpf_path = "../ebpf/target/bpfel-unknown-none/release/ebpf";
     let bpf_data = match std::fs::read(bpf_path) {
         Ok(data) => data,
@@ -100,7 +100,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("eBPF probes natively attached to execve, openat, connect. Waiting for REAL kernel events...");
     
-    // Initialize the real PerfEventArray logger streams from the Kernel
+     
     let mut perf_array = AsyncPerfEventArray::try_from(bpf.take_map("EVENTS").expect("Failed to find EVENTS map")).unwrap();
     let mut perf_array_files = AsyncPerfEventArray::try_from(bpf.take_map("FILE_EVENTS").expect("Failed to find FILE_EVENTS map")).unwrap();
     let mut perf_array_net = AsyncPerfEventArray::try_from(bpf.take_map("NET_EVENTS").expect("Failed to find NET_EVENTS map")).unwrap();
@@ -112,7 +112,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let gateway_url_clone = gateway_url.clone();
     let token_clone = expected_token.clone();
 
-    // Background worker for network batching
+     
     tokio::spawn(async move {
         let mut batch = Vec::with_capacity(50);
         let mut interval = tokio::time::interval(std::time::Duration::from_millis(500));
@@ -155,8 +155,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut buffers = (0..10).map(|_| BytesMut::with_capacity(1024)).collect::<Vec<_>>();
             loop {
                 let events = buf.read_events(&mut buffers).await.unwrap();
-                for i in 0..events.read {
-                    let ptr = buffers[i].as_ptr() as *const ProcessExecEvent;
+                for buf in buffers.iter_mut().take(events.read) {
+                    if buf.len() < std::mem::size_of::<ProcessExecEvent>() {
+                        tracing::warn!("Received malformed process event, dropping.");
+                        continue;
+                    }
+                    let ptr = buf.as_ptr() as *const ProcessExecEvent;
                     let data = unsafe { ptr.read_unaligned() };
                     let comm_len = data.comm.iter().position(|&c| c == 0).unwrap_or(data.comm.len());
                     let comm_str = String::from_utf8_lossy(&data.comm[..comm_len]).into_owned();
@@ -181,7 +185,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }),
                     };
                     let _ = tx_clone1.send(telemetry).await;
-                    buffers[i].clear();
+                    buf.clear();
                 }
             }
         });
@@ -192,8 +196,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut buffers = (0..10).map(|_| BytesMut::with_capacity(1024)).collect::<Vec<_>>();
             loop {
                 let events = buf_files.read_events(&mut buffers).await.unwrap();
-                for i in 0..events.read {
-                    let ptr = buffers[i].as_ptr() as *const FileAccessEvent;
+                for buf in buffers.iter_mut().take(events.read) {
+                    if buf.len() < std::mem::size_of::<FileAccessEvent>() {
+                        tracing::warn!("Received malformed file access event, dropping.");
+                        continue;
+                    }
+                    let ptr = buf.as_ptr() as *const FileAccessEvent;
                     let data = unsafe { ptr.read_unaligned() };
                     let comm_len = data.comm.iter().position(|&c| c == 0).unwrap_or(data.comm.len());
                     let comm_str = String::from_utf8_lossy(&data.comm[..comm_len]).into_owned();
@@ -221,7 +229,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }),
                     };
                     let _ = tx_clone2.send(telemetry).await;
-                    buffers[i].clear();
+                    buf.clear();
                 }
             }
         });
@@ -232,8 +240,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut buffers = (0..10).map(|_| BytesMut::with_capacity(1024)).collect::<Vec<_>>();
             loop {
                 let events = buf_net.read_events(&mut buffers).await.unwrap();
-                for i in 0..events.read {
-                    let ptr = buffers[i].as_ptr() as *const NetworkConnEvent;
+                for buf in buffers.iter_mut().take(events.read) {
+                    if buf.len() < std::mem::size_of::<NetworkConnEvent>() {
+                        tracing::warn!("Received malformed network event, dropping.");
+                        continue;
+                    }
+                    let ptr = buf.as_ptr() as *const NetworkConnEvent;
                     let data = unsafe { ptr.read_unaligned() };
                     let comm_len = data.comm.iter().position(|&c| c == 0).unwrap_or(data.comm.len());
                     let comm_str = String::from_utf8_lossy(&data.comm[..comm_len]).into_owned();
@@ -261,7 +273,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }),
                     };
                     let _ = tx_clone3.send(telemetry).await;
-                    buffers[i].clear();
+                    buf.clear();
                 }
             }
         });
@@ -269,7 +281,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     info!("Kernel Event stream is live. To transmit to the gateway, ensure the NATS routing is active.");
     
-    // Wait for Ctrl+C
+     
     info!("Waiting for Ctrl-C...");
     signal::ctrl_c().await?;
     info!("Exiting...");

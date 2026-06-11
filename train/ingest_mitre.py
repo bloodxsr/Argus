@@ -20,7 +20,7 @@ def load_items(path: Path) -> List[dict]:
     data = json.loads(path.read_text(encoding="utf-8"))
     items: List[dict] = []
     if isinstance(data, dict) and "objects" in data:
-        # STIX bundle
+        
         for obj in data["objects"]:
             t = obj.get("type")
             if t in ("attack-pattern", "course-of-action", "tool", "intrusion-set"):
@@ -31,7 +31,7 @@ def load_items(path: Path) -> List[dict]:
                     if isinstance(er, dict) and er.get("external_id"):
                         mitre_ids.append(er.get("external_id"))
                 items.append({"name": name, "description": desc, "mitre_id": mitre_ids})
-        # dedupe by name
+        
         seen = set()
         unique = []
         for it in items:
@@ -42,7 +42,7 @@ def load_items(path: Path) -> List[dict]:
             unique.append(it)
         return unique
     if isinstance(data, list):
-        # assume list of simple items
+        
         for obj in data:
             if isinstance(obj, dict) and (obj.get("name") or obj.get("title")):
                 name = obj.get("name") or obj.get("title")

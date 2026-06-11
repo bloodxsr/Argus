@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/json"
 	"io"
@@ -17,7 +18,7 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// TelemetryEvent matches the schema sent by the Rust eBPF sensor
+ 
 type TelemetryEvent struct {
 	SchemaVersion string `json:"schema_version"`
 	EventID       string `json:"event_id"`
@@ -61,14 +62,14 @@ func main() {
 
 	r := chi.NewRouter()
 
-	// High performance enterprise middleware
+	 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	// CORS for MERN stack integration
+	 
 	r.Use(func(next http.Handler) http.Handler {
 		allowedOriginsEnv := os.Getenv("AGRUS_ALLOWED_ORIGINS")
 		if allowedOriginsEnv == "" {
@@ -92,6 +93,9 @@ func main() {
 
 			if allowed && origin != "" {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
+			} else if !allowed && origin != "" {
+				http.Error(w, "CORS origin not allowed", http.StatusForbidden)
+				return
 			}
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -108,7 +112,7 @@ func main() {
 		w.Write([]byte("AGRUS Go Gateway Online"))
 	})
 
-	// Authentication middleware
+	 
 	authMiddleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -120,7 +124,12 @@ func main() {
 			}
 
 			token := authHeader[len(prefix):]
-			if subtle.ConstantTimeCompare([]byte(token), []byte(expectedToken)) != 1 {
+			
+			 
+			expectedHash := sha256.Sum256([]byte(expectedToken))
+			providedHash := sha256.Sum256([]byte(token))
+
+			if subtle.ConstantTimeCompare(providedHash[:], expectedHash[:]) != 1 {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
@@ -129,7 +138,7 @@ func main() {
 		})
 	}
 
-	// Sensor Telemetry Ingestion (High Throughput via Goroutines and Batching)
+	 
 	r.With(authMiddleware).Post("/api/v1/telemetry", func(w http.ResponseWriter, r *http.Request) {
 		var events []TelemetryEvent
 		
@@ -155,7 +164,7 @@ func main() {
 
 		for _, event := range events {
 			log.Printf("Received Kernel Event: [%s] from host %s", event.EventType, event.Host)
-			// Fanout to AI Engine in background
+			 
 			go routeToAIEngine(event, nc)
 		}
 
@@ -163,17 +172,17 @@ func main() {
 		w.Write([]byte(`{"status": "queued"}`))
 	})
 
-	// Reverse Proxy for the MERN Stack -> Python AI Engine
+	 
 	proxy := httputil.NewSingleHostReverseProxy(target)
 
-	// Proxy /api/scenarios directly to Python
-	r.Get("/api/scenarios", func(w http.ResponseWriter, req *http.Request) {
+	 
+	r.With(authMiddleware).Get("/api/scenarios", func(w http.ResponseWriter, req *http.Request) {
 		req.URL.Path = "/scenarios"
 		proxy.ServeHTTP(w, req)
 	})
 
-	// Proxy /api/scenarios/{id}/run directly to Python
-	r.Post("/api/scenarios/{id}/run", func(w http.ResponseWriter, req *http.Request) {
+	 
+	r.With(authMiddleware).Post("/api/scenarios/{id}/run", func(w http.ResponseWriter, req *http.Request) {
 		id := chi.URLParam(req, "id")
 		req.URL.Path = "/scenarios/" + id + "/run"
 		proxy.ServeHTTP(w, req)
@@ -194,7 +203,7 @@ func main() {
 	}
 
 	for _, p := range proxyPaths {
-		r.HandleFunc("/api"+p, func(w http.ResponseWriter, req *http.Request) {
+		r.With(authMiddleware).HandleFunc("/api"+p, func(w http.ResponseWriter, req *http.Request) {
 			req.URL.Path = strings.TrimPrefix(req.URL.Path, "/api")
 			proxy.ServeHTTP(w, req)
 		})
