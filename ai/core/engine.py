@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from datetime import datetime, timezone
 from os import getenv
 
@@ -8,6 +9,9 @@ from .knowledge import SecurityKnowledgeBase
 from .retriever import QdrantRetriever
 from .models import AIResult, CompanyConstraints, Decision, IncidentContext
 from .prompts import SecurityPromptBuilder
+from ..features.baselines import BaselineEngine
+from ..features.container import get_container_for_pid, quarantine_container, kill_container
+from ..features.correlation import CorrelationEngine
 
 
 class HeuristicSecurityLLM:
@@ -25,12 +29,18 @@ class HeuristicSecurityLLM:
         knowledge_base: SecurityKnowledgeBase | None = None,
         prompt_builder: SecurityPromptBuilder | None = None,
         retriever: QdrantRetriever | None = None,
+        baseline_engine: BaselineEngine | None = None,
+        correlation_engine: CorrelationEngine | None = None,
     ) -> None:
         self.knowledge_base = knowledge_base or SecurityKnowledgeBase()
         self.prompt_builder = prompt_builder or SecurityPromptBuilder()
         self.backend = backend or self._default_backend()
         # retriever may be unavailable; QdrantRetriever will gracefully fallback
         self.retriever = retriever or QdrantRetriever()
+        # UEBA baseline engine — learns what is "normal" for each entity
+        self.baseline_engine = baseline_engine or BaselineEngine()
+        # APT correlation engine — stitches events into kill chain timelines
+        self.correlation_engine = correlation_engine or CorrelationEngine()
 
     def _default_backend(self) -> SecurityModelBackend:
         heuristic = HeuristicSecurityBackend(self.knowledge_base)
@@ -56,11 +66,83 @@ class HeuristicSecurityLLM:
         return heuristic
 
     def analyze(self, incident: IncidentContext) -> AIResult:
-        # Try vector retrieval first; retriever handles fallbacks to in-memory KB
+        # ── UEBA: Update baseline and calculate deviation ──
+        entity_key = incident.asset_id or incident.host or "unknown"
+        process = None
+        dst_ip = None
+        if hasattr(incident, 'labels') and incident.labels:
+            for label in incident.labels:
+                if label.startswith("process:"):
+                    process = label.split(":", 1)[1]
+                if label.startswith("dst_ip:"):
+                    dst_ip = label.split(":", 1)[1]
+
+        self.baseline_engine.update(
+            entity_id=entity_key,
+            hour=incident.hour_of_day,
+            process=process,
+            ip=dst_ip,
+            event_type=next((l for l in incident.labels if l in ("PROCESS_START", "FILE_ACCESS", "NETWORK_CONNECT")), None) if incident.labels else None,
+        )
+        deviation = self.baseline_engine.get_deviation(
+            entity_id=entity_key,
+            hour=incident.hour_of_day,
+            process=process,
+            ip=dst_ip,
+        )
+
+        # ── Core AI inference ──
         retrieved_context = self.retriever.search(incident.summary, limit=3) or self.knowledge_base.retrieve(incident)
         prompt = self.prompt_builder.build(incident, retrieved_context)
+
+        # Inject UEBA context into the prompt's user text
+        if deviation.get("has_baseline") and deviation.get("overall_deviation", 0) > 0.3:
+            ueba_context = (
+                f"\n[UEBA ALERT] Entity '{entity_key}' behavioral deviation: {deviation['overall_deviation']:.0%}. "
+                f"Anomalies: {'; '.join(deviation.get('deviations', []))}. "
+                f"Typical hours: {deviation.get('typical_hours', [])}. "
+                f"Typical processes: {deviation.get('typical_processes', [])}."
+            )
+            prompt = prompt._replace(user_prompt=prompt.user_prompt + ueba_context)
+
         draft = self.backend.generate(prompt, incident)
-        return self._draft_to_ai_result(incident, draft, prompt)
+        ai_result = self._draft_to_ai_result(incident, draft, prompt)
+
+        # ── APT Correlation: Ingest and check for multi-stage attacks ──
+        correlated = self.correlation_engine.ingest(
+            incident_id=incident.incident_id,
+            host=incident.host,
+            asset_id=incident.asset_id,
+            mitre_techniques=ai_result.mitre_techniques,
+            classification=ai_result.classification,
+            action=ai_result.recommended_action,
+        )
+
+        # If a multi-stage attack is detected, escalate the result
+        if correlated:
+            ai_result = AIResult(
+                incident_id=ai_result.incident_id,
+                classification=f"APT DETECTED: {correlated.summary}",
+                confidence=min(ai_result.confidence + 0.15, 0.99),
+                mitre_techniques=ai_result.mitre_techniques,
+                recommended_action="isolate_host",
+                escalate_to_human=True,
+                reasoning=f"{ai_result.reasoning}; APT_CORRELATION: {correlated.severity} — {correlated.summary}",
+            )
+
+        # Attach UEBA deviation to the reasoning if significant
+        if deviation.get("has_baseline") and deviation.get("overall_deviation", 0) > 0.3:
+            ai_result = AIResult(
+                incident_id=ai_result.incident_id,
+                classification=ai_result.classification,
+                confidence=min(ai_result.confidence + deviation["overall_deviation"] * 0.1, 0.99),
+                mitre_techniques=ai_result.mitre_techniques,
+                recommended_action=ai_result.recommended_action,
+                escalate_to_human=ai_result.escalate_to_human,
+                reasoning=f"{ai_result.reasoning}; UEBA_DEVIATION={deviation['overall_deviation']:.0%} [{'; '.join(deviation.get('deviations', []))}]",
+            )
+
+        return ai_result
 
     def _draft_to_ai_result(
         self,

@@ -7,8 +7,8 @@ from typing import Optional
 
 from nats.aio.client import Client as NATS
 
-from .engine import SecurityDecisionEngine
-from .models import IncidentContext, CompanyConstraints
+from .core.engine import SecurityDecisionEngine
+from .core.models import IncidentContext, CompanyConstraints
 
 
 async def run_nats(nats_url: str = "nats://127.0.0.1:4222") -> None:

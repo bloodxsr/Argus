@@ -1,16 +1,24 @@
-from .backends import FineTunedLlamaBackend, HeuristicSecurityBackend, OllamaChatBackend
-from .engine import HeuristicSecurityLLM, SecurityDecisionEngine
-from .evaluation import EvaluationHarness, default_evaluation_cases
-from .knowledge import KnowledgeSnippet, SecurityKnowledgeBase
-from .models import AIResult, CompanyConstraints, Decision, IncidentContext, EvaluationCase
-from .prompts import SecurityPromptBuilder
+"""AGRUS Security AI Service — modular AI-native security platform.
+
+Directory structure:
+    ai/
+    ├── core/          ← Core engine: backends, models, knowledge, prompts, decision engine
+    ├── features/      ← Feature modules: UEBA, APT correlation, container security, scanners, remediation
+    ├── api.py         ← FastAPI application
+    ├── nats_agent.py  ← NATS event bus subscriber
+    └── scenarios/     ← Evaluation & replay
+"""
+from .core.backends import FineTunedLlamaBackend, HeuristicSecurityBackend, OllamaChatBackend
+from .core.engine import HeuristicSecurityLLM, SecurityDecisionEngine
+from .core.knowledge import KnowledgeSnippet, SecurityKnowledgeBase
+from .core.models import AIResult, CompanyConstraints, Decision, IncidentContext, EvaluationCase
+from .core.prompts import SecurityPromptBuilder
 
 __all__ = [
     "AIResult",
     "CompanyConstraints",
     "Decision",
     "EvaluationCase",
-    "EvaluationHarness",
     "FineTunedLlamaBackend",
     "HeuristicSecurityLLM",
     "IncidentContext",
@@ -20,5 +28,4 @@ __all__ = [
     "SecurityKnowledgeBase",
     "SecurityPromptBuilder",
     "SecurityDecisionEngine",
-    "default_evaluation_cases",
 ]

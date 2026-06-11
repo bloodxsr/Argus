@@ -4,7 +4,7 @@ import json
 from dataclasses import asdict
 
 from .evaluation import EvaluationHarness, default_evaluation_cases
-from .engine import HeuristicSecurityLLM
+from .core.engine import HeuristicSecurityLLM
 
 
 def main() -> int:

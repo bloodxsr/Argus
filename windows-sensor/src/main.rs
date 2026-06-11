@@ -41,6 +41,31 @@ struct InstanceCreationEvent {
     target_instance: wmi::Variant,
 }
 
+#[cfg(windows)]
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
+struct Win32Service {
+    name: String,
+    path_name: Option<String>,
+    start_mode: Option<String>,
+}
+
+#[cfg(windows)]
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
+struct ServiceCreationEvent {
+    target_instance: Win32Service,
+}
+
+#[cfg(windows)]
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
+struct RegistryValueChangeEvent {
+    hive: String,
+    key_path: String,
+    value_name: String,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
@@ -132,7 +157,78 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         });
 
-        // Registry and Service monitors can be added as async spawned loops here using wmi_con.clone()
+        let tx_service = tx.clone();
+        let host_name_service = host_name.clone();
+        let wmi_service = wmi_con.clone();
+        
+        tokio::spawn(async move {
+            info!("Subscribing to Win32_Service creation events...");
+            let mut filters = wmi_service
+                .exec_notification_query_async::<ServiceCreationEvent>("SELECT * FROM __InstanceCreationEvent WITHIN 5 WHERE TargetInstance ISA 'Win32_Service'")
+                .expect("Failed to subscribe to WMI service events");
+
+            while let Some(result) = filters.next().await {
+                if let Ok(event) = result {
+                    let service = event.target_instance;
+                    info!("Service Installed: {}", service.name);
+                    let telemetry = TelemetryEvent {
+                        schema_version: "1.0".to_string(),
+                        event_id: format!("evt-{}", uuid::Uuid::new_v4()),
+                        source: "wmi".to_string(),
+                        event_type: "SERVICE_INSTALL".to_string(),
+                        timestamp: chrono::Utc::now().to_rfc3339(),
+                        host: host_name_service.clone(),
+                        host_ip: "10.0.1.50".to_string(),
+                        environment: "production".to_string(), 
+                        pid: 0,
+                        uid: 0, 
+                        payload: serde_json::json!({
+                            "service_name": service.name,
+                            "path": service.path_name.unwrap_or_default(),
+                            "start_mode": service.start_mode.unwrap_or_default(),
+                        }),
+                    };
+                    let _ = tx_service.send(telemetry).await;
+                }
+            }
+        });
+
+        let tx_registry = tx.clone();
+        let host_name_registry = host_name.clone();
+        let wmi_registry = wmi_con.clone();
+        
+        tokio::spawn(async move {
+            info!("Subscribing to Registry Run key modification events...");
+            let query = "SELECT * FROM RegistryValueChangeEvent WHERE Hive='HKEY_LOCAL_MACHINE' AND KeyPath='SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run'";
+            let mut filters = wmi_registry
+                .exec_notification_query_async::<RegistryValueChangeEvent>(query)
+                .expect("Failed to subscribe to WMI registry events");
+
+            while let Some(result) = filters.next().await {
+                if let Ok(event) = result {
+                    info!("Registry Modified: {}\\{}\\{}", event.hive, event.key_path, event.value_name);
+                    let telemetry = TelemetryEvent {
+                        schema_version: "1.0".to_string(),
+                        event_id: format!("evt-{}", uuid::Uuid::new_v4()),
+                        source: "wmi".to_string(),
+                        event_type: "REGISTRY_MODIFY".to_string(),
+                        timestamp: chrono::Utc::now().to_rfc3339(),
+                        host: host_name_registry.clone(),
+                        host_ip: "10.0.1.50".to_string(),
+                        environment: "production".to_string(), 
+                        pid: 0,
+                        uid: 0, 
+                        payload: serde_json::json!({
+                            "hive": event.hive,
+                            "key_path": event.key_path,
+                            "value_name": event.value_name,
+                        }),
+                    };
+                    let _ = tx_registry.send(telemetry).await;
+                }
+            }
+        });
+
         info!("Windows Sensor is actively monitoring WMI events. Press Ctrl+C to exit.");
         tokio::signal::ctrl_c().await.unwrap();
     }

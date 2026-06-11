@@ -4,8 +4,8 @@ import json
 from dataclasses import asdict
 from typing import Any
 
-from .engine import SecurityDecisionEngine
-from .models import ActionRecord, CompanyConstraints, ReviewDecision, Scenario
+from .core.engine import SecurityDecisionEngine
+from .core.models import ActionRecord, CompanyConstraints, ReviewDecision, Scenario
 from .scenarios import load_scenarios
 
 

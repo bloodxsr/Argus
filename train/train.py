@@ -64,13 +64,13 @@ def train_foundation_model():
     raw_dataset = Dataset.from_dict({"text": corpus})
     
     def tokenize_fn(batch):
-        return tokenizer(batch["text"], truncation=True, max_length=1024)
+        return tokenizer(batch["text"], truncation=True, max_length=2048)
 
     tokenized_dataset = raw_dataset.map(tokenize_fn, batched=True, remove_columns=["text"])
     collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
     # 4. Initialize Pre-trained Llama-3-8B Model with QLoRA (4-bit)
-    print("Loading Pre-Trained Llama-3.1-8B Brain in 4-bit mode for RTX 4050...")
+    print("Loading Pre-Trained Llama-3.1-8B Brain in 4-bit mode for RTX 4060 (8GB VRAM)...")
     
     from transformers import BitsAndBytesConfig
     bnb_config = BitsAndBytesConfig(
@@ -90,8 +90,8 @@ def train_foundation_model():
     peft_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
         inference_mode=False,
-        r=8, # Reduced back to 8 because 8B model eats up way more VRAM
-        lora_alpha=16,
+        r=16, # Pushed to 16 since we have 8GB VRAM (RTX 4060)
+        lora_alpha=32,
         lora_dropout=0.05,
         target_modules=["q_proj", "k_proj", "v_proj", "o_proj"] # Target all attention layers
     )
@@ -102,9 +102,10 @@ def train_foundation_model():
     args = TrainingArguments(
         output_dir="models/agrus-v1",
         overwrite_output_dir=True,
-        num_train_epochs=1,
-        per_device_train_batch_size=1, # Reduced to 1 to fit in 6GB VRAM
-        gradient_accumulation_steps=8, # Compensate for small batch size
+        num_train_epochs=3, # Increased to 3 epochs for better convergence
+        per_device_train_batch_size=2, # Pushed to 2 for RTX 4060
+        gradient_accumulation_steps=4, # 2 batch * 4 grad_accum = effective batch size of 8
+        gradient_checkpointing=True, # Critical for fitting 8B model + 2048 ctx into 8GB VRAM
         save_steps=500,
         logging_steps=10,
         learning_rate=2e-4, 

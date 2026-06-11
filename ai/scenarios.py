@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Iterable
 
-from .models import IncidentContext, Scenario, UnifiedEvent
+from .core.models import IncidentContext, Scenario, UnifiedEvent
 
 
 def default_scenario_dir() -> Path:
@@ -47,7 +47,7 @@ def scenario_from_dict(data: dict) -> Scenario:
 
 
 def evaluation_cases_from_scenarios(scenarios: Iterable[Scenario]):
-    from .models import CompanyConstraints, EvaluationCase
+    from .core.models import CompanyConstraints, EvaluationCase
 
     cases = []
     for scenario in scenarios:

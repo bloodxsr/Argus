@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Iterable
 
-from .engine import SecurityDecisionEngine
-from .models import CompanyConstraints, EvaluationCase, EvaluationResult
+from .core.engine import SecurityDecisionEngine
+from .core.models import CompanyConstraints, EvaluationCase, EvaluationResult
 from .scenarios import evaluation_cases_from_scenarios, load_scenarios
 
 
@@ -16,7 +16,7 @@ def default_evaluation_cases() -> tuple[EvaluationCase, ...]:
         approved_hours=(9, 10, 11, 12, 13, 14, 15, 16, 17),
     )
 
-    from .models import IncidentContext
+    from .core.models import IncidentContext
 
     cases = (
         EvaluationCase(

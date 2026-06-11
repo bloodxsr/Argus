@@ -16,6 +16,25 @@ pub struct ProcessExecEvent {
     pub comm: [u8; 16],
 }
 
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct FileAccessEvent {
+    pub pid: u32,
+    pub tgid: u32,
+    pub comm: [u8; 16],
+    pub filename: [u8; 256],
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct NetworkConnEvent {
+    pub pid: u32,
+    pub tgid: u32,
+    pub comm: [u8; 16],
+    pub dst_addr: u32,
+    pub dst_port: u16,
+}
+
 // The payload that matches our Python AI Engine's expected format
 #[derive(Serialize, Debug, Clone)]
 struct TelemetryEvent {
@@ -58,10 +77,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     program.load().expect("failed to load program");
     program.attach("syscalls", "sys_enter_execve").expect("failed to attach tracepoint");
     
-    info!("eBPF probes natively attached to sys_enter_execve. Waiting for REAL kernel events...");
+    let program_open: &mut TracePoint = bpf.program_mut("sys_enter_openat").expect("program not found").try_into().expect("not a tracepoint");
+    program_open.load().expect("failed to load program_open");
+    program_open.attach("syscalls", "sys_enter_openat").expect("failed to attach openat tracepoint");
+
+    let program_conn: &mut TracePoint = bpf.program_mut("sys_enter_connect").expect("program not found").try_into().expect("not a tracepoint");
+    program_conn.load().expect("failed to load program_conn");
+    program_conn.attach("syscalls", "sys_enter_connect").expect("failed to attach connect tracepoint");
+
+    info!("eBPF probes natively attached to execve, openat, connect. Waiting for REAL kernel events...");
     
-    // Initialize the real PerfEventArray logger stream from the Kernel
+    // Initialize the real PerfEventArray logger streams from the Kernel
     let mut perf_array = AsyncPerfEventArray::try_from(bpf.take_map("EVENTS").expect("Failed to find EVENTS map")).unwrap();
+    let mut perf_array_files = AsyncPerfEventArray::try_from(bpf.take_map("FILE_EVENTS").expect("Failed to find FILE_EVENTS map")).unwrap();
+    let mut perf_array_net = AsyncPerfEventArray::try_from(bpf.take_map("NET_EVENTS").expect("Failed to find NET_EVENTS map")).unwrap();
     let cpus = online_cpus().expect("Failed to get online CPUs");
 
     let (tx, mut rx) = tokio::sync::mpsc::channel::<TelemetryEvent>(10000);
@@ -103,23 +132,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for cpu in cpus {
         let mut buf = perf_array.open(cpu, None).unwrap();
-        let host_name_clone = host_name.clone();
-        let tx_clone = tx.clone();
-
+        let mut buf_files = perf_array_files.open(cpu, None).unwrap();
+        let mut buf_net = perf_array_net.open(cpu, None).unwrap();
+        
+        let host_name_clone1 = host_name.clone();
+        let tx_clone1 = tx.clone();
         tokio::spawn(async move {
             let mut buffers = (0..10).map(|_| BytesMut::with_capacity(1024)).collect::<Vec<_>>();
-            
             loop {
                 let events = buf.read_events(&mut buffers).await.unwrap();
                 for i in 0..events.read {
                     let ptr = buffers[i].as_ptr() as *const ProcessExecEvent;
                     let data = unsafe { ptr.read_unaligned() };
-
-                    // Parse the C-string from comm
                     let comm_len = data.comm.iter().position(|&c| c == 0).unwrap_or(data.comm.len());
                     let comm_str = String::from_utf8_lossy(&data.comm[..comm_len]).into_owned();
-
-                    info!("Intercepted Process natively from Kernel: {} (PID: {})", comm_str, data.pid);
 
                     let telemetry = TelemetryEvent {
                         schema_version: "1.0".to_string(),
@@ -127,7 +153,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         source: "ebpf".to_string(),
                         event_type: "PROCESS_START".to_string(),
                         timestamp: chrono::Utc::now().to_rfc3339(),
-                        host: host_name_clone.clone(),
+                        host: host_name_clone1.clone(),
                         host_ip: "10.0.1.20".to_string(),
                         environment: "production".to_string(), 
                         pid: data.pid,
@@ -140,10 +166,87 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             "type": "sys_enter_execve"
                         }),
                     };
+                    let _ = tx_clone1.send(telemetry).await;
+                    buffers[i].clear();
+                }
+            }
+        });
 
-                    let _ = tx_clone.send(telemetry).await;
-                    
-                    // CRITICAL FIX: Clear the BytesMut cursor so it doesn't exhaust capacity
+        let host_name_clone2 = host_name.clone();
+        let tx_clone2 = tx.clone();
+        tokio::spawn(async move {
+            let mut buffers = (0..10).map(|_| BytesMut::with_capacity(1024)).collect::<Vec<_>>();
+            loop {
+                let events = buf_files.read_events(&mut buffers).await.unwrap();
+                for i in 0..events.read {
+                    let ptr = buffers[i].as_ptr() as *const FileAccessEvent;
+                    let data = unsafe { ptr.read_unaligned() };
+                    let comm_len = data.comm.iter().position(|&c| c == 0).unwrap_or(data.comm.len());
+                    let comm_str = String::from_utf8_lossy(&data.comm[..comm_len]).into_owned();
+                    let filename_len = data.filename.iter().position(|&c| c == 0).unwrap_or(data.filename.len());
+                    let filename_str = String::from_utf8_lossy(&data.filename[..filename_len]).into_owned();
+
+                    let telemetry = TelemetryEvent {
+                        schema_version: "1.0".to_string(),
+                        event_id: format!("evt-{}", uuid::Uuid::new_v4()),
+                        source: "ebpf".to_string(),
+                        event_type: "FILE_ACCESS".to_string(),
+                        timestamp: chrono::Utc::now().to_rfc3339(),
+                        host: host_name_clone2.clone(),
+                        host_ip: "10.0.1.20".to_string(),
+                        environment: "production".to_string(), 
+                        pid: data.pid,
+                        uid: 0, 
+                        payload: serde_json::json!({
+                            "process": comm_str,
+                            "process_id": data.pid, 
+                            "thread_group_id": data.tgid,
+                            "filename": filename_str,
+                            "live": true,
+                            "type": "sys_enter_openat"
+                        }),
+                    };
+                    let _ = tx_clone2.send(telemetry).await;
+                    buffers[i].clear();
+                }
+            }
+        });
+
+        let host_name_clone3 = host_name.clone();
+        let tx_clone3 = tx.clone();
+        tokio::spawn(async move {
+            let mut buffers = (0..10).map(|_| BytesMut::with_capacity(1024)).collect::<Vec<_>>();
+            loop {
+                let events = buf_net.read_events(&mut buffers).await.unwrap();
+                for i in 0..events.read {
+                    let ptr = buffers[i].as_ptr() as *const NetworkConnEvent;
+                    let data = unsafe { ptr.read_unaligned() };
+                    let comm_len = data.comm.iter().position(|&c| c == 0).unwrap_or(data.comm.len());
+                    let comm_str = String::from_utf8_lossy(&data.comm[..comm_len]).into_owned();
+                    let ip = std::net::Ipv4Addr::from(u32::from_be(data.dst_addr));
+
+                    let telemetry = TelemetryEvent {
+                        schema_version: "1.0".to_string(),
+                        event_id: format!("evt-{}", uuid::Uuid::new_v4()),
+                        source: "ebpf".to_string(),
+                        event_type: "NETWORK_CONNECT".to_string(),
+                        timestamp: chrono::Utc::now().to_rfc3339(),
+                        host: host_name_clone3.clone(),
+                        host_ip: "10.0.1.20".to_string(),
+                        environment: "production".to_string(), 
+                        pid: data.pid,
+                        uid: 0, 
+                        payload: serde_json::json!({
+                            "process": comm_str,
+                            "process_id": data.pid, 
+                            "thread_group_id": data.tgid,
+                            "dst_ip": ip.to_string(),
+                            "dst_port": data.dst_port,
+                            "live": true,
+                            "type": "sys_enter_connect"
+                        }),
+                    };
+                    let _ = tx_clone3.send(telemetry).await;
                     buffers[i].clear();
                 }
             }
