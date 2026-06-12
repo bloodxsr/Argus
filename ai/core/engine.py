@@ -5,7 +5,7 @@ import time
 from datetime import datetime, timezone
 from os import getenv
 
-from .backends import FineTunedLlamaBackend, HeuristicSecurityBackend, ModelDraft, OllamaChatBackend, SecurityModelBackend
+from .backends import LocalTransformersBackend, HeuristicSecurityBackend, ModelDraft, OllamaChatBackend, SecurityModelBackend
 from .knowledge import SecurityKnowledgeBase
 from .retriever import QdrantRetriever
 from .models import AIResult, CompanyConstraints, Decision, IncidentContext
@@ -51,17 +51,15 @@ class HeuristicSecurityLLM:
 
         
         import os
-        adapter_path = getenv("AGRUS_MODEL_PATH", "models/agrus-v1-final")
-        if os.path.isdir(adapter_path) and os.path.exists(os.path.join(adapter_path, "adapter_config.json")):
-            return FineTunedLlamaBackend(
-                adapter_path=adapter_path,
+        if getenv("SECURITY_AI_USE_LOCAL_TRANSFORMERS", "true").lower() == "true":
+            return LocalTransformersBackend(
                 fallback=heuristic,
             )
 
         
         if getenv("SECURITY_AI_OLLAMA_BASE_URL"):
             return OllamaChatBackend(
-                model=getenv("SECURITY_AI_OLLAMA_MODEL", "llama3.1"),
+                model=getenv("SECURITY_AI_OLLAMA_MODEL", "Foundation-Sec-8B-Reasoning"),
                 base_url=getenv("SECURITY_AI_OLLAMA_BASE_URL"),
                 fallback=heuristic,
             )

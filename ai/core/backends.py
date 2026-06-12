@@ -154,7 +154,7 @@ class OllamaChatBackend:
         timeout_seconds: float = 20.0,
         fallback: SecurityModelBackend | None = None,
     ) -> None:
-        self.model = model or os.getenv("SECURITY_AI_OLLAMA_MODEL", "llama3.1")
+        self.model = model or os.getenv("SECURITY_AI_OLLAMA_MODEL", "Foundation-Sec-8B-Reasoning")
         self.base_url = (base_url or os.getenv("SECURITY_AI_OLLAMA_BASE_URL", "http://localhost:11434")).rstrip("/")
         self.timeout_seconds = timeout_seconds
         self.fallback = fallback or HeuristicSecurityBackend()
@@ -219,20 +219,18 @@ class OllamaChatBackend:
         return ""
 
 
-class FineTunedLlamaBackend:
-    """Backend that loads PEFT/LoRA adapters on top of Llama-3.1-8B-Instruct for real GPU inference."""
+class LocalTransformersBackend:
+    """Backend that loads local Transformers models for real GPU inference."""
 
-    name = "llama-3.1-8b-finetuned"
+    name = "foundation-sec-8b"
 
     def __init__(
         self,
-        base_model: str = "meta-llama/Llama-3.1-8B-Instruct",
-        adapter_path: str = "models/agrus-v1-final",
+        base_model: str = "Foundation-Sec-8B-Reasoning",
         fallback: SecurityModelBackend | None = None,
         max_new_tokens: int = 512,
     ) -> None:
         self.base_model_name = base_model
-        self.adapter_path = adapter_path
         self.max_new_tokens = max_new_tokens
         self.fallback = fallback or HeuristicSecurityBackend()
         self._model = None
@@ -247,14 +245,7 @@ class FineTunedLlamaBackend:
         try:
             import torch
             from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-            from peft import PeftModel
         except ImportError:
-            return False
-
-        adapter_check = os.path.isdir(self.adapter_path) and os.path.exists(
-            os.path.join(self.adapter_path, "adapter_config.json")
-        )
-        if not adapter_check:
             return False
 
         try:
@@ -265,16 +256,15 @@ class FineTunedLlamaBackend:
                 bnb_4bit_compute_dtype=torch.bfloat16,
             )
 
-            self._tokenizer = AutoTokenizer.from_pretrained(self.adapter_path)
+            self._tokenizer = AutoTokenizer.from_pretrained(self.base_model_name)
             if self._tokenizer.pad_token is None:
                 self._tokenizer.pad_token = self._tokenizer.eos_token
 
-            base_model = AutoModelForCausalLM.from_pretrained(
+            self._model = AutoModelForCausalLM.from_pretrained(
                 self.base_model_name,
                 quantization_config=bnb_config,
                 device_map="auto",
             )
-            self._model = PeftModel.from_pretrained(base_model, self.adapter_path)
             self._model.eval()
             self._loaded = True
             return True
