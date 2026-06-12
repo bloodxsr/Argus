@@ -15,16 +15,30 @@ services:
     volumes:
       - mongo_data:/data/db
 
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+
   security-ai:
     build:
       context: .
       dockerfile: Dockerfile.security-ai
     container_name: security-ai
     restart: unless-stopped
+    depends_on:
+      - ollama
     environment:
       AGRUS_INTERNAL_TOKEN: "${AGRUS_INTERNAL_TOKEN}"
       AGRUS_REMEDIATION_AUTO_PUSH: "${AGRUS_REMEDIATION_AUTO_PUSH}"
       GITHUB_TOKEN: "${GITHUB_TOKEN}"
+      SECURITY_AI_OLLAMA_MODEL: "Foundation-Sec-8B-Reasoning"
+      SECURITY_AI_OLLAMA_BASE_URL: "http://ollama:11434"
     ports:
       - "8000:8000"
     volumes:
@@ -76,3 +90,4 @@ services:
 
 volumes:
   mongo_data:
+  ollama_data:
