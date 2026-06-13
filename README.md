@@ -73,14 +73,23 @@ cd ../sensor
 cargo run
 ```
 
-## AI Model Fine-Tuning
+## AI Model
 
-The platform utilizes a customized Llama-3.1-8B model trained on SOC analyst workflows and raw Wazuh alerts. To run the QLoRA fine-tuning pipeline (optimized for 8GB VRAM RTX 4060):
+Argus uses the **Cisco Foundation-Sec-8B-Reasoning Q4** model for all threat analysis and reasoning.
 
-```bash
-uv run python train/train.py
+This is a security-domain foundation model developed by Cisco, pre-trained and fine-tuned on cybersecurity data including threat intelligence, SOC analyst workflows, vulnerability reports, and attack pattern documentation. It is not a general-purpose LLM — it was built specifically to reason about security events.
+
+**To pull and run the model via Ollama:**
 ```
-*Note: This utilizes 4-bit quantization, gradient checkpointing, a max sequence length of 2048, and effective batch size of 8.*
+ollama pull foundation-sec-8b-reasoning
+```
+
+**To verify it is running:**
+```
+ollama list
+```
+
+The model is served locally via Ollama and called by the `security_ai_service` through the configured endpoint. No external API calls, no data leaving your infrastructure.
 
 ## API Examples
 
